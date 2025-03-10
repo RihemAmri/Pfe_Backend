@@ -1,2 +1,5 @@
 .vs/
 *.vsix
+bin/
+obj/
+
