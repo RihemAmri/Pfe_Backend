@@ -9,39 +9,13 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[Authentication.API.Entities.Utilisateur, Authentication.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Authentication.API.DTO.UtilisateurDTO, Authentication.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
           "text/json"
         ],
         "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "Authentication.API.Controllers.AuthController",
-    "Method": "CreateUtilisateur",
-    "RelativePath": "api/v1/Auth",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "utilisateur",
-        "Type": "Authentication.API.Entities.Utilisateur",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "Authentication.API.Entities.Utilisateur",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 201
       }
     ]
   },
@@ -61,7 +35,7 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "Authentication.API.Entities.Utilisateur",
+        "Type": "Authentication.API.DTO.UtilisateurDTO",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -94,8 +68,8 @@
         "IsRequired": true
       },
       {
-        "Name": "utilisateur",
-        "Type": "Authentication.API.Entities.Utilisateur",
+        "Name": "utilisateurDTO",
+        "Type": "Authentication.API.DTO.SignUpDTO",
         "IsRequired": true
       }
     ],
@@ -112,7 +86,7 @@
           "application/json",
           "text/json"
         ],
-        "StatusCode": 400
+        "StatusCode": 404
       }
     ]
   },
@@ -144,6 +118,57 @@
           "text/json"
         ],
         "StatusCode": 404
+      }
+    ]
+  },
+  {
+    "ContainingType": "Authentication.API.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/v1/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "loginDTO",
+        "Type": "Authentication.API.DTO.LoginDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Authentication.API.Controllers.AuthController",
+    "Method": "CreateUtilisateur",
+    "RelativePath": "api/v1/Auth/signup",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "utilisateurDTO",
+        "Type": "Authentication.API.DTO.SignUpDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "Authentication.API.DTO.UtilisateurDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 201
+      },
+      {
+        "Type": "System.String",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 400
       }
     ]
   },

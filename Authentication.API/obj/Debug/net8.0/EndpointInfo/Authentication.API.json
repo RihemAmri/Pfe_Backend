@@ -5,43 +5,7 @@
     "version": "1.0"
   },
   "paths": {
-    "/api/v1/Auth": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Utilisateur"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Utilisateur"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Utilisateur"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
+    "/api/v1/Auth/signup": {
       "post": {
         "tags": [
           "Auth"
@@ -50,17 +14,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             }
           }
@@ -71,17 +35,37 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -110,17 +94,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Utilisateur"
+                  "$ref": "#/components/schemas/UtilisateurDTO"
                 }
               }
             }
@@ -165,17 +149,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/Utilisateur"
+                "$ref": "#/components/schemas/SignUpDTO"
               }
             }
           }
@@ -184,8 +168,8 @@
           "204": {
             "description": "No Content"
           },
-          "400": {
-            "description": "Bad Request",
+          "404": {
+            "description": "Not Found",
             "content": {
               "text/plain": {
                 "schema": {
@@ -247,6 +231,75 @@
         }
       }
     },
+    "/api/v1/Auth": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UtilisateurDTO"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UtilisateurDTO"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UtilisateurDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/WeatherForecast": {
       "get": {
         "tags": [
@@ -289,6 +342,20 @@
   },
   "components": {
     "schemas": {
+      "LoginDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "motDePasse": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -316,7 +383,45 @@
         },
         "additionalProperties": { }
       },
-      "Utilisateur": {
+      "SignUpDTO": {
+        "type": "object",
+        "properties": {
+          "cin": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nom": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "adresse": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "nullable": true
+          },
+          "numeroCompte": {
+            "type": "string",
+            "nullable": true
+          },
+          "motDePasse": {
+            "type": "string",
+            "nullable": true
+          },
+          "confirmMotDePasse": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UtilisateurDTO": {
         "type": "object",
         "properties": {
           "id": {
@@ -339,11 +444,11 @@
             "type": "string",
             "nullable": true
           },
-          "motDePasse": {
+          "role": {
             "type": "string",
             "nullable": true
           },
-          "role": {
+          "numeroCompte": {
             "type": "string",
             "nullable": true
           }

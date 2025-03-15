@@ -1,64 +1,67 @@
 ﻿using Authentication.API.Data;
 using Authentication.API.Entities;
+using Authentication.API.Repository;
+using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Authentication.API.Repository
+public class UtilisateurRepository : IUtilisateurRepository
 {
-    public class UtilisateurRepository : IUtilisateurRepository
+    private readonly IAuthContext _context;
+
+    public UtilisateurRepository(IAuthContext context)
     {
-        private readonly IAuthContext _context;
-
-        public UtilisateurRepository(IAuthContext context)
-        {
-            _context = context;
-        }
-
-        public async Task CreateUtilisateur(Utilisateur utilisateur)
-        {
-            await _context.Utilisateurs.InsertOneAsync(utilisateur);
-        }
-
-        public async Task<bool> UpdateUtilisateur(Utilisateur utilisateur)
-        {
-            var updateResult = await _context.Utilisateurs.ReplaceOneAsync(
-                u => u.Id == utilisateur.Id, utilisateur);
-
-            return updateResult.ModifiedCount > 0;
-        }
-
-        public async Task<bool> DeleteUtilisateur(string id)
-        {
-            var filter = Builders<Utilisateur>.Filter.Eq(u => u.Id, id);
-            var deleteResult = await _context.Utilisateurs.DeleteOneAsync(filter);
-
-            return deleteResult.DeletedCount > 0;
-        }
-
-        public async Task<IEnumerable<Utilisateur>> GetUtilisateurs()
-        {
-            var utilisateurs = await _context.Utilisateurs.Find(_ => true).ToListAsync();
-            Console.WriteLine($"🔎 Nombre d'utilisateurs trouvés : {utilisateurs.Count}");
-            return utilisateurs;
-        }
-
-        public async Task<Utilisateur> GetUtilisateurById(string id)
-        {
-            return await _context.Utilisateurs.Find(u => u.Id == id).FirstOrDefaultAsync();
-        }
-
-        public async Task<IEnumerable<Utilisateur>> GetUtilisateurByNom(string nom)
-        {
-            var filter = Builders<Utilisateur>.Filter.Eq(u => u.Nom, nom);
-            return await _context.Utilisateurs.Find(filter).ToListAsync();
-        }
-
-        public async Task<IEnumerable<Utilisateur>> GetUtilisateurByRole(string role)
-        {
-            var filter = Builders<Utilisateur>.Filter.Eq(u => u.Role, role);
-            return await _context.Utilisateurs.Find(filter).ToListAsync();
-        }
+        _context = context;
     }
+
+    public async Task CreateUtilisateur(Utilisateur utilisateur)
+    {
+        await _context.Utilisateurs.InsertOneAsync(utilisateur);
+    }
+
+    public async Task<Utilisateur> GetUtilisateurById(string id)
+    {
+        var objectId = new ObjectId(id);
+        return await _context.Utilisateurs.Find(u => u.Id == objectId).FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<Utilisateur>> GetUtilisateurs()
+    {
+        return await _context.Utilisateurs.Find(_ => true).ToListAsync();
+    }
+
+    public async Task<bool> UpdateUtilisateur(Utilisateur utilisateur)
+    {
+        var update = Builders<Utilisateur>.Update
+            .Set(u => u.Nom, utilisateur.Nom)
+            .Set(u => u.Email, utilisateur.Email)
+            .Set(u => u.Adresse, utilisateur.Adresse)
+            .Set(u => u.Role, utilisateur.Role)
+            .Set(u => u.NumeroCompte, utilisateur.NumeroCompte);
+
+        var result = await _context.Utilisateurs.UpdateOneAsync(u => u.Id == utilisateur.Id, update);
+        return result.ModifiedCount > 0;
+    }
+
+    public async Task<bool> DeleteUtilisateur(string id)
+    {
+        var objectId = new ObjectId(id);
+        var result = await _context.Utilisateurs.DeleteOneAsync(u => u.Id == objectId);
+        return result.DeletedCount > 0;
+    }
+    public async Task<bool> CheckIfUtilisateurExists(string email, int cin, string numeroCompte)
+    {
+        var utilisateur = await _context.Utilisateurs
+            .Find(u => u.Email == email || u.CIN == cin || u.NumeroCompte == numeroCompte)
+            .FirstOrDefaultAsync();
+
+        return utilisateur != null;
+    }
+
+    public async Task<Utilisateur> GetUtilisateurByEmail(string email)
+    {
+        return await _context.Utilisateurs.Find(u => u.Email == email).FirstOrDefaultAsync();
+    }
+
 }

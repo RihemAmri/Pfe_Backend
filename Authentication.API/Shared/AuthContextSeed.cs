@@ -1,6 +1,7 @@
 ﻿using Authentication.API.Entities;
 using MongoDB.Driver;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Authentication.API.Shared
 {
@@ -26,7 +27,8 @@ namespace Authentication.API.Shared
                     Email = "foulen.foulen@example.com",
                     Adresse = "Tunis",
                     MotDePasse = "hashed_password_1",
-                    Role = "Utilisateur"
+                    Role = "Utilisateur",
+                   
                 },
                 new Utilisateur
                 {
@@ -35,7 +37,8 @@ namespace Authentication.API.Shared
                     Email = "Mohamed.Elsaeed@example.com",
                     Adresse = "Sfax",
                     MotDePasse = "hashed_password_2",
-                    Role = "Utilisateur"
+                    Role = "Utilisateur",
+                    
                 }
             };
         }

@@ -1,9 +1,12 @@
-﻿using Authentication.API.Entities;
-using Authentication.API.Repository;
+﻿using Authentication.API.DTO;
+using Authentication.API.Entities;
+using Authentication.API.BusinessLogic;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Net;
+using Authentication.API.Services;
 using System.Threading.Tasks;
+
 
 namespace Authentication.API.Controllers
 {
@@ -11,66 +14,160 @@ namespace Authentication.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly IUtilisateurRepository _repository;
+        private readonly IUtilisateurService _service;
+        private readonly TokenService _tokenService;
+        private object _utilisateurService;
+        private readonly CloudinaryService _cloudinaryService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IUtilisateurRepository repository)
+        public AuthController(IUtilisateurService service, ILogger<AuthController> logger, CloudinaryService cloudinaryService, TokenService tokenService)
         {
-            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _service = service ?? throw new ArgumentNullException(nameof(service));  // Vérification de l'injection
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));  // Vérification de l'injection
+            _cloudinaryService = cloudinaryService ?? throw new ArgumentNullException(nameof(cloudinaryService));  // Vérification de l'injection
+            _logger = logger;
         }
 
-        [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<Utilisateur>), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<IEnumerable<Utilisateur>>> GetUtilisateurs()
+       [HttpPost("signup")]
+public async Task<IActionResult> SignUp([FromForm] SignUpDTO signUpDto, IFormFile imageFile)
+{
+    if (signUpDto == null)
+    {
+        return BadRequest("Les données de l'utilisateur sont manquantes.");
+    }
+
+    if (imageFile == null || imageFile.Length == 0)
+    {
+        return BadRequest("Le fichier image est requis.");
+    }
+
+    try
+    {
+        // Upload de l'image sur Cloudinary
+        var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile);
+        if (uploadResult == null)
         {
-            var utilisateurs = await _repository.GetUtilisateurs();
-            return Ok(utilisateurs);
+            _logger.LogError("Upload de l'image échoué.");
+            return BadRequest("Erreur lors du téléchargement de l'image.");
         }
+
+        // Ajout de l'URL de l'image dans le DTO
+        signUpDto.ImageUrl = uploadResult.SecureUrl.ToString();
+
+        // Appel au service pour créer l'utilisateur
+        var utilisateur = await _service.CreateUtilisateur(signUpDto);
+
+        // Création de la réponse utilisateur (DTO)
+        var utilisateurResponse = new UtilisateurDTO
+        {
+            Id = utilisateur.Id.ToString(),
+            CIN = utilisateur.CIN,
+            Nom = utilisateur.Nom,
+            Email = utilisateur.Email,
+            Adresse = utilisateur.Adresse,
+            Role = utilisateur.Role,
+            NumeroCompte = utilisateur.NumeroCompte,
+            ImageUrl = signUpDto.ImageUrl  // Ajout de l'URL de l'image dans la réponse
+        };
+
+        // Retourne un code HTTP 201 (Created) avec la ressource créée
+        return CreatedAtAction(nameof(GetUtilisateurById), new { id = utilisateur.Id.ToString() }, utilisateurResponse);
+    }
+    catch (Exception ex)
+    {
+        // Si une exception survient (par exemple : email ou CIN déjà utilisé), retourne un BadRequest avec le message d'erreur
+        return BadRequest($"Erreur : {ex.Message}");
+    }
+}
+
+
+
+
+
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(Utilisateur), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(UtilisateurDTO), (int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
-        public async Task<ActionResult<Utilisateur>> GetUtilisateurById(string id)
+        public async Task<ActionResult<UtilisateurDTO>> GetUtilisateurById(string id)
         {
-            var utilisateur = await _repository.GetUtilisateurById(id);
+            var utilisateur = await _service.GetUtilisateurById(id);
             if (utilisateur == null)
                 return NotFound();
 
-            return Ok(utilisateur);
+            var utilisateurResponse = new UtilisateurDTO
+            {
+                Id = utilisateur.Id.ToString(),
+                CIN = utilisateur.CIN,
+                Nom = utilisateur.Nom,
+                Email = utilisateur.Email,
+                Adresse = utilisateur.Adresse,
+                Role = utilisateur.Role,
+                NumeroCompte = utilisateur.NumeroCompte,
+                ImageUrl = utilisateur.ImageUrl 
+            };
+
+            return Ok(utilisateurResponse);
         }
 
-        [HttpPost]
-        [ProducesResponseType(typeof(Utilisateur), (int)HttpStatusCode.Created)]
-        public async Task<IActionResult> CreateUtilisateur([FromBody] Utilisateur utilisateur)
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<UtilisateurDTO>), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<IEnumerable<UtilisateurDTO>>> GetUtilisateurs()
         {
-            await _repository.CreateUtilisateur(utilisateur);
-            return CreatedAtAction(nameof(GetUtilisateurById), new { id = utilisateur.Id }, utilisateur);
+            var utilisateurs = await _service.GetUtilisateurs();
+            var utilisateursResponse = utilisateurs.Select(u => new UtilisateurDTO
+            {
+                Id = u.Id.ToString(),
+                CIN = u.CIN,
+                Nom = u.Nom,
+                Email = u.Email,
+                Adresse = u.Adresse,
+                Role = u.Role,
+                NumeroCompte = u.NumeroCompte,
+                ImageUrl = u.ImageUrl
+            }).ToList();
+
+            return Ok(utilisateursResponse);
         }
 
         [HttpPut("{id}")]
         [ProducesResponseType((int)HttpStatusCode.NoContent)]
-        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<IActionResult> UpdateUtilisateur(string id, [FromBody] Utilisateur utilisateur)
+        [ProducesResponseType((int)HttpStatusCode.NotFound)]
+        public async Task<IActionResult> UpdateUtilisateur(string id, [FromBody] SignUpDTO utilisateurDTO)
         {
-            if (id != utilisateur.Id)
-                return BadRequest();
+            var utilisateur = await _service.UpdateUtilisateur(id, utilisateurDTO);
+            if (utilisateur == null)
+            {
+                return NotFound("Utilisateur non trouvé.");
+            }
 
-            var updated = await _repository.UpdateUtilisateur(utilisateur);
-            if (!updated)
-                return NotFound();
-
-            return NoContent();
+            return Ok(utilisateur);
         }
+
 
         [HttpDelete("{id}")]
         [ProducesResponseType((int)HttpStatusCode.NoContent)]
         [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> DeleteUtilisateur(string id)
         {
-            var deleted = await _repository.DeleteUtilisateur(id);
+            var deleted = await _service.DeleteUtilisateur(id);
             if (!deleted)
                 return NotFound();
 
             return NoContent();
         }
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
+        {
+            var utilisateur = await _service.Authenticate(loginDTO.Email, loginDTO.MotDePasse);
+            if (utilisateur == null)
+            {
+                return Unauthorized("Email ou mot de passe incorrect.");
+            }
+
+            // Crée un token d'authentification si nécessaire
+            var token = _tokenService.GenerateToken(utilisateur);
+            return Ok(new { token = token });
+        }
+
     }
 }
