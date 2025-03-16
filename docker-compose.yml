@@ -1,0 +1,50 @@
+version: "3.4"
+
+services:
+  authentication-api:
+    build:
+      context: ./Authentication.API
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MONGO_DB_URI=mongodb://admin:secret@mongo:27017/bdimage?authSource=admin
+    networks:
+      - backend
+    depends_on:
+      - mongo
+
+  simulation-api:
+    build:
+      context: ./Simulation.API
+      dockerfile: Dockerfile
+    ports:
+      - "4001:4001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - backend
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - backend
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=secret
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  mongo-data:

@@ -3,7 +3,7 @@ using Simulation.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+builder.WebHost.UseUrls("http://*:4001");
 builder.Services.AddControllers();
 // Enregistrement du service SimulationService
 builder.Services.AddScoped<SimulationService>();  // Ajoutez cette ligne pour enregistrer SimulationService

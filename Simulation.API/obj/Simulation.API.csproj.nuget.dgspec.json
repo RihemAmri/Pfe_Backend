@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj": {}
+    "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj": {}
   },
   "projects": {
-    "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj": {
+    "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj",
+        "projectUniqueName": "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj",
         "projectName": "Simulation.API",
-        "projectPath": "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj",
+        "projectPath": "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\Simulation.API.csproj",
         "packagesPath": "C:\\Users\\dell\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\obj\\",
+        "outputPath": "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Simulation.API\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

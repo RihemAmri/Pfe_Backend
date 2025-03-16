@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "j4aYvhm7Zo8=",
+  "dgSpecHash": "b8h6Rxu8dC8=",
   "success": true,
-  "projectFilePath": "c:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Authentication.API\\Authentication.API.csproj",
+  "projectFilePath": "C:\\Users\\dell\\Desktop\\tryimg\\pfe\\backend\\Authentication.API\\Authentication.API.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\dell\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\dell\\.nuget\\packages\\cloudinarydotnet\\1.27.4\\cloudinarydotnet.1.27.4.nupkg.sha512",
