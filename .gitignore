@@ -4,3 +4,8 @@
 *.exe
 *.pdb
 
+bin/
+obj/
+*.dll
+*.exe
+*.pdb

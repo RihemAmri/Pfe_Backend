@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\Simulation.API.props" />
-</Project>
