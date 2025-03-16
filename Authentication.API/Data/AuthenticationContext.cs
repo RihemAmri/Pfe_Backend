@@ -25,5 +25,10 @@ namespace Authentication.API.Data
         }
 
         public IMongoCollection<Utilisateur> Utilisateurs { get; }
+
+        public Task DeleteManyAsync(FilterDefinition<Utilisateur> filter)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

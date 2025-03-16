@@ -2,4 +2,6 @@
 *.vsix
 bin/
 obj/
-
+*.dll
+*.exe
+*.pdb

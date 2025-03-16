@@ -7,5 +7,7 @@ namespace Authentication.API.Data
     public interface IAuthContext
     {
         IMongoCollection<Utilisateur> Utilisateurs { get; }
+
+        Task DeleteManyAsync(FilterDefinition<Utilisateur> filter);
     }
 }

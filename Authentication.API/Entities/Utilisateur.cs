@@ -7,9 +7,10 @@ namespace Authentication.API.Entities
     {
             [BsonId]
             [BsonRepresentation(BsonType.ObjectId)]
-            public string Id { get; set; }
+            public ObjectId Id { get; set; }
 
-            public int CIN { get; set; }
+        [BsonElement("CIN")]
+        public int CIN { get; set; }
 
             public string Nom { get; set; }
 
@@ -18,9 +19,11 @@ namespace Authentication.API.Entities
             public string Adresse { get; set; }
 
             public string MotDePasse { get; set; }
-
+            public string NumeroCompte { get; set; }
             public string Role { get; set; }
-        }
+            public string ImageUrl { get; set; }
+        
+    }
 
 
     }

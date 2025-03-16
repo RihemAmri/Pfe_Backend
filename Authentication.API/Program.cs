@@ -1,29 +1,60 @@
 using Authentication.API.Data;
 using Authentication.API.Repository;
+using Authentication.API.BusinessLogic;
 using Authentication.API.Shared;
+using Authentication.API.Services;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddSingleton<CloudinaryService>();  // CloudinaryService ajouté comme singleton
+    
+// Swagger/OpenAPI setup
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//interface+class
-builder.Services.Configure<DatabaseSettings>(op => builder.Configuration.GetSection("DatabaseSettings").Bind(op));
+// Configurer la connexion à la base de données (MongoDB)
+builder.Services.Configure<DatabaseSettings>(options => builder.Configuration.GetSection("DatabaseSettings").Bind(options));
+
+// Configurer le contexte de la base de données
 builder.Services.AddSingleton<IAuthContext, AuthenticationContext>();
+
+// Ajouter le repository
 builder.Services.AddScoped<IUtilisateurRepository, UtilisateurRepository>();
+
+// Ajouter le service
+builder.Services.AddScoped<IUtilisateurService, UtilisateurService>();
+
+// Ajouter le service TokenService
+builder.Services.AddSingleton<TokenService>(new TokenService("TaCléSecrèteTrèsLongueEtSécurisée")); // Clé secrète pour la génération du token
+
+// Ajouter la configuration CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost",
+        builder => builder
+            .WithOrigins("http://localhost:4200") // Frontend Angular
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger();  // Swagger doit être utilisé avant UseSwaggerUI
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
+    });
 }
+
+// Appliquer la politique CORS
+app.UseCors("AllowLocalhost");
 
 app.UseAuthorization();
 
