@@ -1,2 +1,6 @@
 .vs/
 *.vsix
+*.dll
+*.exe
+*.pdb
+
