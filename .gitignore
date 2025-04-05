@@ -9,3 +9,9 @@ obj/
 *.dll
 *.exe
 *.pdb
+
+*.user
+*.suo
+*.cache
+*.dbmdl
+*.log
