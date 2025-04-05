@@ -22,6 +22,8 @@ namespace Authentication.API.Entities
             public string NumeroCompte { get; set; }
             public string Role { get; set; }
             public string ImageUrl { get; set; }
+             public string ResetToken { get; set; }
+public DateTime? ResetTokenExpiration { get; set; }
         
     }
 

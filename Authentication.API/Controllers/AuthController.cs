@@ -28,57 +28,57 @@ namespace Authentication.API.Controllers
             _logger = logger;
         }
 
-       [HttpPost("signup")]
-public async Task<IActionResult> SignUp([FromForm] SignUpDTO signUpDto, IFormFile imageFile)
-{
-    if (signUpDto == null)
-    {
-        return BadRequest("Les données de l'utilisateur sont manquantes.");
-    }
-
-    if (imageFile == null || imageFile.Length == 0)
-    {
-        return BadRequest("Le fichier image est requis.");
-    }
-
-    try
-    {
-        // Upload de l'image sur Cloudinary
-        var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile);
-        if (uploadResult == null)
+        [HttpPost("signup")]
+        public async Task<IActionResult> SignUp([FromForm] SignUpDTO signUpDto, IFormFile imageFile)
         {
-            _logger.LogError("Upload de l'image échoué.");
-            return BadRequest("Erreur lors du téléchargement de l'image.");
+            if (signUpDto == null)
+            {
+                return BadRequest("Les données de l'utilisateur sont manquantes.");
+            }
+
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return BadRequest("Le fichier image est requis.");
+            }
+
+            try
+            {
+                // Upload de l'image sur Cloudinary
+                var uploadResult = await _cloudinaryService.UploadImageAsync(imageFile);
+                if (uploadResult == null)
+                {
+                    _logger.LogError("Upload de l'image échoué.");
+                    return BadRequest("Erreur lors du téléchargement de l'image.");
+                }
+
+                // Ajout de l'URL de l'image dans le DTO
+                signUpDto.ImageUrl = uploadResult.SecureUrl.ToString();
+
+                // Appel au service pour créer l'utilisateur
+                var utilisateur = await _service.CreateUtilisateur(signUpDto);
+
+                // Création de la réponse utilisateur (DTO)
+                var utilisateurResponse = new UtilisateurDTO
+                {
+                    Id = utilisateur.Id.ToString(),
+                    CIN = utilisateur.CIN,
+                    Nom = utilisateur.Nom,
+                    Email = utilisateur.Email,
+                    Adresse = utilisateur.Adresse,
+                    Role = utilisateur.Role,
+                    NumeroCompte = utilisateur.NumeroCompte,
+                    ImageUrl = signUpDto.ImageUrl  // Ajout de l'URL de l'image dans la réponse
+                };
+
+                // Retourne un code HTTP 201 (Created) avec la ressource créée
+                return CreatedAtAction(nameof(GetUtilisateurById), new { id = utilisateur.Id.ToString() }, utilisateurResponse);
+            }
+            catch (Exception ex)
+            {
+                // Si une exception survient (par exemple : email ou CIN déjà utilisé), retourne un BadRequest avec le message d'erreur
+                return BadRequest($"Erreur : {ex.Message}");
+            }
         }
-
-        // Ajout de l'URL de l'image dans le DTO
-        signUpDto.ImageUrl = uploadResult.SecureUrl.ToString();
-
-        // Appel au service pour créer l'utilisateur
-        var utilisateur = await _service.CreateUtilisateur(signUpDto);
-
-        // Création de la réponse utilisateur (DTO)
-        var utilisateurResponse = new UtilisateurDTO
-        {
-            Id = utilisateur.Id.ToString(),
-            CIN = utilisateur.CIN,
-            Nom = utilisateur.Nom,
-            Email = utilisateur.Email,
-            Adresse = utilisateur.Adresse,
-            Role = utilisateur.Role,
-            NumeroCompte = utilisateur.NumeroCompte,
-            ImageUrl = signUpDto.ImageUrl  // Ajout de l'URL de l'image dans la réponse
-        };
-
-        // Retourne un code HTTP 201 (Created) avec la ressource créée
-        return CreatedAtAction(nameof(GetUtilisateurById), new { id = utilisateur.Id.ToString() }, utilisateurResponse);
-    }
-    catch (Exception ex)
-    {
-        // Si une exception survient (par exemple : email ou CIN déjà utilisé), retourne un BadRequest avec le message d'erreur
-        return BadRequest($"Erreur : {ex.Message}");
-    }
-}
 
 
 
@@ -103,7 +103,7 @@ public async Task<IActionResult> SignUp([FromForm] SignUpDTO signUpDto, IFormFil
                 Adresse = utilisateur.Adresse,
                 Role = utilisateur.Role,
                 NumeroCompte = utilisateur.NumeroCompte,
-                ImageUrl = utilisateur.ImageUrl 
+                ImageUrl = utilisateur.ImageUrl
             };
 
             return Ok(utilisateurResponse);
@@ -168,6 +168,48 @@ public async Task<IActionResult> SignUp([FromForm] SignUpDTO signUpDto, IFormFil
             var token = _tokenService.GenerateToken(utilisateur);
             return Ok(new { token = token });
         }
+
+
+
+
+        [HttpPost("forgot-password")]
+public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO forgotPasswordDto)
+{
+    bool result = await _service.RequestPasswordReset(forgotPasswordDto.Email);
+    if (!result)
+        return NotFound(new { message = "Utilisateur non trouvé." });
+
+    return Ok(new { message = "Un email a été envoyé avec les instructions de réinitialisation." });
+}
+
+       [HttpPost("reset-password")]
+public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDto)
+{
+    if (resetPasswordDto == null)
+    {
+        return BadRequest("Données reçues sont nulles.");
+    }
+
+    Console.WriteLine($"Email: {resetPasswordDto.Email}");
+    Console.WriteLine($"Token: {resetPasswordDto.Token}");
+    Console.WriteLine($"NewPassword: {resetPasswordDto.NewPassword}");
+
+    if (string.IsNullOrEmpty(resetPasswordDto.Email) ||
+        string.IsNullOrEmpty(resetPasswordDto.Token) ||
+        string.IsNullOrEmpty(resetPasswordDto.NewPassword))
+    {
+        return BadRequest("Un des champs est vide.");
+    }
+
+    bool result = await _service.ResetPassword(resetPasswordDto.Token, resetPasswordDto.NewPassword);
+    if (!result)
+        return BadRequest("Token invalide ou expiré.");
+
+    return Ok(new { message = "Mot de passe réinitialisé avec succès." });
+}
+
+
+
 
     }
 }

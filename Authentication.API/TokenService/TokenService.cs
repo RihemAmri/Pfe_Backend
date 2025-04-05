@@ -43,5 +43,28 @@ namespace Authentication.API.Services
             // Retourne le token sous forme de chaîne
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-    }
+    
+    public string GenerateResetToken(Utilisateur utilisateur)
+{
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.Email, utilisateur.Email),
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("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"));
+    var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(
+        issuer: "YourIssuer",
+        audience: "YourAudience",
+        claims: claims,
+        expires: DateTime.Now.AddHours(1),
+        signingCredentials: credentials
+    );
+
+    return new JwtSecurityTokenHandler().WriteToken(token);
 }
+}
+}
+
+

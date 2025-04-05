@@ -142,6 +142,58 @@ public class UtilisateurService : IUtilisateurService
 
         return utilisateur; // Authentification réussie
     }
-    
+    public async Task<Utilisateur> GetUtilisateurByResetToken(string resetToken)
+{
+    return await _context.Utilisateurs
+        .Find(u => u.ResetToken == resetToken && u.ResetTokenExpiration > DateTime.UtcNow)
+        .FirstOrDefaultAsync();
+}
+
+public async Task<bool> RequestPasswordReset(string email)
+{
+    var utilisateur = await _repository.GetUtilisateurByEmail(email);
+    if (utilisateur == null)
+        return false; // Utilisateur non trouvé
+
+    // Générer un token aléatoire
+    utilisateur.ResetToken = Guid.NewGuid().ToString();
+    utilisateur.ResetTokenExpiration = DateTime.UtcNow.AddHours(1); // Expiration dans 1h
+
+    // Mettre à jour l'utilisateur en base
+    var filter = Builders<Utilisateur>.Filter.Eq(u => u.Id, utilisateur.Id);
+    var update = Builders<Utilisateur>.Update
+        .Set(u => u.ResetToken, utilisateur.ResetToken)
+        .Set(u => u.ResetTokenExpiration, utilisateur.ResetTokenExpiration);
+
+    await _context.Utilisateurs.UpdateOneAsync(filter, update);
+
+      var passwordResetService = new PasswordResetService();
+    passwordResetService.SendResetEmail(email, utilisateur.ResetToken);
+    return true;
+}
+public async Task<bool> ResetPassword(string resetToken, string newPassword)
+{
+    var utilisateur = await _context.Utilisateurs
+        .Find(u => u.ResetToken == resetToken && u.ResetTokenExpiration > DateTime.UtcNow)
+        .FirstOrDefaultAsync();
+
+    if (utilisateur == null)
+        return false; // Token invalide ou expiré
+
+    // Hasher le nouveau mot de passe
+    utilisateur.MotDePasse = BCrypt.Net.BCrypt.HashPassword(newPassword);
+    utilisateur.ResetToken = null;
+    utilisateur.ResetTokenExpiration = null;
+
+    var filter = Builders<Utilisateur>.Filter.Eq(u => u.Id, utilisateur.Id);
+    var update = Builders<Utilisateur>.Update
+        .Set(u => u.MotDePasse, utilisateur.MotDePasse)
+        .Set(u => u.ResetToken, null)
+        .Set(u => u.ResetTokenExpiration, null);
+
+    await _context.Utilisateurs.UpdateOneAsync(filter, update);
+    return true;
+}
+
 
 }
