@@ -1,4 +1,4 @@
-﻿using Authentication.API.Entities;
+﻿﻿using Authentication.API.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -18,5 +18,3 @@ public interface IUtilisateurService
     
     
 }
-
-

@@ -11,7 +11,7 @@ builder.WebHost.UseUrls("http://*:4000");
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSingleton<CloudinaryService>();  // CloudinaryService ajouté comme singleton
-    
+
 // Swagger/OpenAPI setup
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IAuthContext, AuthenticationContext>();
 
 // Ajouter le repository
 builder.Services.AddScoped<IUtilisateurRepository, UtilisateurRepository>();
+builder.Services.AddScoped<ICompteRepository, CompteRepository>();
 
 // Ajouter le service
 builder.Services.AddScoped<IUtilisateurService, UtilisateurService>();

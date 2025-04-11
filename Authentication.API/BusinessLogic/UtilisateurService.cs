@@ -1,4 +1,4 @@
-﻿using Authentication.API.Data;
+﻿﻿using Authentication.API.Data;
 using Authentication.API.DTO;
 using Authentication.API.Entities;
 using Authentication.API.Repository;
@@ -12,13 +12,15 @@ namespace Authentication.API.BusinessLogic;
 public class UtilisateurService : IUtilisateurService
 {
     private readonly IUtilisateurRepository _repository;
+    private readonly ICompteRepository _compteRepository;
     private IAuthContext _context;
     
 
-    public UtilisateurService(IUtilisateurRepository repository, IAuthContext context)
+    public UtilisateurService(IUtilisateurRepository repository, IAuthContext context,ICompteRepository compteRepository)
     {
         _repository = repository;
         _context = context;
+         _compteRepository = compteRepository;
     }
 
 
@@ -28,6 +30,11 @@ public class UtilisateurService : IUtilisateurService
      if (utilisateurDTO == null)
     {
         throw new ArgumentNullException(nameof(utilisateurDTO), "UtilisateurDTO cannot be null.");
+    }
+      bool compteExiste = await _compteRepository.CompteExiste(utilisateurDTO.NumeroCompte);
+    if (!compteExiste)
+    {
+        throw new Exception("Le numéro de compte fourni n'existe pas dans la base des comptes.");
     }
     bool utilisateurExiste = await _repository.CheckIfUtilisateurExists(utilisateurDTO.Email, utilisateurDTO.CIN, utilisateurDTO.NumeroCompte);
 
