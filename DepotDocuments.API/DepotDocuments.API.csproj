@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Gestion des mots de passe hachés -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.26.0" />
+    
+    <!-- Driver MongoDB -->
+    <PackageReference Include="MongoDB.Driver" Version="3.3.0" />
+    
+    <!-- Swagger / OpenAPI -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    
+    <!-- JWT (authentification) -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
+    
+    <!-- Pour l'utilisation de IHttpClientFactory (AddHttpClient) -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
