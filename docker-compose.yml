@@ -28,6 +28,32 @@ services:
     depends_on:
       - mongo
 
+  chatbot-api:
+    build:
+      context: ./Chatbot.API
+      dockerfile: Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - backend
+    depends_on:
+      - mongo
+
+  depotdocuments-api:
+    build:
+      context: ./DepotDocuments.API
+      dockerfile: Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - backend
+    depends_on:
+      - mongo
+
   mongo:
     image: mongo:latest
     container_name: mongodb
