@@ -39,6 +39,7 @@ namespace Authentication.API.Shared
                 {
                     CIN = 12345678,
                     Nom = "foulen ben follen",
+                    Prenom="Ben follen",
                     Email = "foulen.foulen@example.com",
                     Adresse = "Tunis",
                     MotDePasse = "hashed_password_1",
@@ -49,6 +50,7 @@ namespace Authentication.API.Shared
                 {
                     CIN = 87654321,
                     Nom = "Mohamed Elsaeed",
+                    Prenom="Ben follen",
                     Email = "Mohamed.Elsaeed@example.com",
                     Adresse = "Sfax",
                     MotDePasse = "hashed_password_2",

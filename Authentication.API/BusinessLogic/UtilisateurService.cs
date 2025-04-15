@@ -48,6 +48,7 @@ public class UtilisateurService : IUtilisateurService
     {
         CIN = utilisateurDTO.CIN,
         Nom = utilisateurDTO.Nom,
+        Prenom =utilisateurDTO.Prenom,
         Email = utilisateurDTO.Email,
         Adresse = utilisateurDTO.Adresse,
         Role = utilisateurDTO.Role,
@@ -98,6 +99,10 @@ public class UtilisateurService : IUtilisateurService
     {
         utilisateur.Nom = utilisateurDTO.Nom;
     }
+    if (!string.IsNullOrEmpty(utilisateurDTO.Prenom))
+    {
+        utilisateur.Prenom = utilisateurDTO.Prenom;
+    }
     if (!string.IsNullOrEmpty(utilisateurDTO.Adresse))
     {
         utilisateur.Adresse = utilisateurDTO.Adresse;
@@ -116,6 +121,7 @@ public class UtilisateurService : IUtilisateurService
     var update = Builders<Utilisateur>.Update
         .Set(u => u.Email, utilisateur.Email)
         .Set(u => u.Nom, utilisateur.Nom)
+        .Set(u => u.Prenom, utilisateur.Prenom)
         .Set(u => u.Adresse, utilisateur.Adresse)
         .Set(u => u.NumeroCompte, utilisateur.NumeroCompte)
         .Set(u => u.MotDePasse, utilisateur.MotDePasse);
