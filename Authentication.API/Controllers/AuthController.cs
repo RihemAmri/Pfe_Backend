@@ -212,7 +212,70 @@ public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO reset
 }
 
 
+[HttpPut("changer-motdepasse/{id}")]
+public async Task<IActionResult> ChangerMotDePasse(string id, [FromBody] ChangerMotDePasseDto dto)
+{
+    try
+    {
+        var resultat = await _service.ChangerMotDePasse(id, dto);
+        if (resultat)
+            return Ok(new { message = "Mot de passe mis à jour avec succès." });
+        else
+            return BadRequest("La mise à jour du mot de passe a échoué.");
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(new { message = ex.Message });
+    }
+}
+
+[HttpPut("profil/{id}")]
+public async Task<IActionResult> UpdateProfilUtilisateur(string id, [FromForm] UtilisateurProfilUpdateDto dto)
+{
+    try
+    {
+        // Récupérer l'utilisateur depuis la BD
+        var utilisateur = await _service.GetUtilisateurById(id);
+        if (utilisateur == null)
+            return NotFound("Utilisateur non trouvé.");
+
+        // Si une nouvelle image est fournie, on la met sur Cloudinary
+        if (dto.ImageFile != null && dto.ImageFile.Length > 0)
+        {
+            var uploadResult = await _cloudinaryService.UploadImageAsync(dto.ImageFile);
+            if (uploadResult != null)
+            {
+                utilisateur.ImageUrl = uploadResult.SecureUrl.ToString();
+            }
+        }
+
+        // Mise à jour des autres infos si fournies
+        utilisateur.Nom = dto.Nom ?? utilisateur.Nom;
+        utilisateur.Prenom = dto.Prenom ?? utilisateur.Prenom;
+        utilisateur.Email = dto.Email ?? utilisateur.Email;
+        utilisateur.Adresse = dto.Adresse ?? utilisateur.Adresse;
+
+        // Sauvegarde via le service
+        var updated = await _service.UpdateUtilisateurProfil(id, utilisateur);
+        if (!updated)
+            return BadRequest("Échec de la mise à jour du profil.");
+
+        return Ok(new { message = "Profil mis à jour avec succès." });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Erreur lors de la mise à jour : {ex.Message}");
+    }
+}
+
+
+
+
+
+
+
 
 
     }
+    
 }

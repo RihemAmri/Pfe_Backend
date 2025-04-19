@@ -207,6 +207,52 @@ public async Task<bool> ResetPassword(string resetToken, string newPassword)
     await _context.Utilisateurs.UpdateOneAsync(filter, update);
     return true;
 }
+public async Task<bool> ChangerMotDePasse(string id, ChangerMotDePasseDto dto)
+{
+    if (!ObjectId.TryParse(id, out ObjectId objectId))
+    {
+        throw new Exception("ID invalide");
+    }
+
+    var utilisateur = await _context.Utilisateurs.Find(u => u.Id == objectId).FirstOrDefaultAsync();
+    if (utilisateur == null)
+    {
+        throw new Exception("Utilisateur non trouvé");
+    }
+
+    // Vérifier l'ancien mot de passe
+    if (!BCrypt.Net.BCrypt.Verify(dto.AncienMotDePasse, utilisateur.MotDePasse))
+    {
+        throw new Exception("Ancien mot de passe incorrect");
+    }
+
+    // Hasher le nouveau mot de passe
+    var nouveauMotDePasseHashe = BCrypt.Net.BCrypt.HashPassword(dto.NouveauMotDePasse);
+
+    var filter = Builders<Utilisateur>.Filter.Eq(u => u.Id, utilisateur.Id);
+    var update = Builders<Utilisateur>.Update
+        .Set(u => u.MotDePasse, nouveauMotDePasseHashe);
+
+    var result = await _context.Utilisateurs.UpdateOneAsync(filter, update);
+    return result.ModifiedCount > 0;
+}
+public async Task<bool> UpdateUtilisateurProfil(string id, Utilisateur updatedUtilisateur)
+{
+    var objectId = ObjectId.Parse(id);
+    var utilisateur = await _context.Utilisateurs.Find(u => u.Id == objectId).FirstOrDefaultAsync();
+    if (utilisateur == null)
+        return false;
+
+    utilisateur.Nom = updatedUtilisateur.Nom;
+    utilisateur.Prenom = updatedUtilisateur.Prenom;
+    utilisateur.Email = updatedUtilisateur.Email;
+    utilisateur.Adresse = updatedUtilisateur.Adresse;
+    utilisateur.ImageUrl = updatedUtilisateur.ImageUrl;
+
+    var result = await _context.Utilisateurs.ReplaceOneAsync(u => u.Id == objectId, utilisateur);
+    return result.IsAcknowledged && result.ModifiedCount > 0;
+}
+
 
 
 }

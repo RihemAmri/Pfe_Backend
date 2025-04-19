@@ -15,6 +15,8 @@ public interface IUtilisateurService
     
     Task<Utilisateur> GetUtilisateurByResetToken(string resetToken);
      Task<bool> ResetPassword(string resetToken, string newPassword);
-    
-    
+    Task<bool> ChangerMotDePasse(string id, Authentication.API.DTO.ChangerMotDePasseDto dto);
+
+    Task<bool> UpdateUtilisateurProfil(string id, Utilisateur utilisateur);
+
 }
