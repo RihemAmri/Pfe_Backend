@@ -8,7 +8,7 @@ using DepotDocuments.API.Services.Ocr.Interfaces;
 using DepotDocuments.API.Data;  // Ajouter l'importation pour DocumentContext
 using DepotDocuments.API.Router;
 using DepotDocuments.API.Repositories; // 🔧 à ajouter tout en haut
-
+using DepotDocuments.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure la prise en charge de la connexion au service via l'URL
@@ -25,7 +25,8 @@ builder.Services.AddScoped<OcrConfigService>();
 
 builder.Services.AddScoped<OcrDispatcherService>();
 builder.Services.AddScoped<CloudinaryService>();
-
+builder.Services.AddScoped<MailService>();
+builder.Services.AddScoped<ICreditDocumentService, CreditDocumentService>();
 // Enregistrement du service de MongoDB
 builder.Services.AddScoped<IDocumentContext, DocumentContext>();  // Enregistrer le DocumentContext pour l'accès à MongoDB
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();  // Enregistrer le repository de documents
