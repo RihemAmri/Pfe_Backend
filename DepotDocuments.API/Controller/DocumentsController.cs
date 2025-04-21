@@ -18,16 +18,16 @@ namespace DepotDocuments.API.Controllers
     {
         private readonly CloudinaryService _uploadService;
         private readonly OcrDispatcherService _ocrDispatcher;
-        private readonly IDocumentContext _documentContext;
+        //private readonly IDocumentContext _documentContext;
 
         public DocumentsController(
             CloudinaryService uploadService,
-            OcrDispatcherService ocrDispatcher,
-            IDocumentContext documentContext)  // Injecter le DocumentContext
+            OcrDispatcherService ocrDispatcher)
+            //IDocumentContext documentContext)  // Injecter le DocumentContext
         {
             _uploadService = uploadService;
             _ocrDispatcher = ocrDispatcher;
-            _documentContext = documentContext; // Injecter la dépendance MongoDB via DocumentContext
+            //_documentContext = documentContext; // Injecter la dépendance MongoDB via DocumentContext
         }
 
         [HttpPost("upload")]
@@ -44,17 +44,17 @@ namespace DepotDocuments.API.Controllers
             var extractedText = await _ocrDispatcher.ProcessAsync(request.File, request.TypeDocument);
 
             // 3. Sauvegarde en base MongoDB
-            var document = new Document
+            /*var document = new Document
             {
                 Url = imageUrl,
                 Type = request.TypeDocument,
                 TextExtrait = extractedText,
                 DateAjout = DateTime.UtcNow
             };
-
+            
             var collection = _documentContext.Documents;
             await collection.InsertOneAsync(document);  // Insérer le document dans la collection MongoDB
-
+            */
             // 4. Retour au frontend
             return Ok(new OcrResultDTO
             {
@@ -62,5 +62,20 @@ namespace DepotDocuments.API.Controllers
                 ExtractedText = extractedText
             });
         }
+      [HttpPost("upload-justificatif")]
+    public async Task<IActionResult> UploadJustificatif([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("Fichier non valide.");
+        }
+
+        var uploadResult = await _uploadService.UploadImageAsync(file);
+
+        return Ok(new {
+            imageUrl = uploadResult.SecureUrl.ToString()
+        });
+    }
+
     }
 }
