@@ -62,20 +62,22 @@ namespace DepotDocuments.API.Controllers
                 ExtractedText = extractedText
             });
         }
-      [HttpPost("upload-justificatif")]
-    public async Task<IActionResult> UploadJustificatif([FromForm] IFormFile file)
-    {
-        if (file == null || file.Length == 0)
+        [HttpPost("upload-justificatif")]
+        public async Task<IActionResult> UploadJustificatif([FromForm] UploadJustificatifRequest request)
         {
-            return BadRequest("Fichier non valide.");
+            var file = request.File;
+
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("Fichier non valide.");
+            }
+
+            var uploadResult = await _uploadService.UploadImageAsync(file);
+
+            return Ok(new {
+                imageUrl = uploadResult.SecureUrl.ToString()
+            });
         }
-
-        var uploadResult = await _uploadService.UploadImageAsync(file);
-
-        return Ok(new {
-            imageUrl = uploadResult.SecureUrl.ToString()
-        });
-    }
 
     }
 }
