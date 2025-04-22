@@ -55,6 +55,8 @@ namespace DepotDocuments.API.Controllers
 
             // Envoi de l’email de confirmation
             await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
+            await _mailService.EnvoyerNotificationAdmin();
+
             //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
             return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
         }

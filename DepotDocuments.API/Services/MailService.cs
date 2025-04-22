@@ -39,7 +39,7 @@ namespace DepotDocuments.API.Services
             var message = new MailMessage
             {
                 From = new MailAddress(senderEmail, "STB Bank"),
-                Subject = "Confirmation de la réception de votre demande de crédit",
+                Subject = "🔔Confirmation de la réception de votre demande de crédit",
                 SubjectEncoding = Encoding.UTF8,
                 BodyEncoding = Encoding.UTF8
             };
@@ -63,5 +63,45 @@ namespace DepotDocuments.API.Services
             // Envoi
             await smtp.SendMailAsync(message);
         }
+        public async Task EnvoyerNotificationAdmin()
+{
+    var smtpHost = _config["MailSettings:SmtpHost"];
+    var smtpPort = int.Parse(_config["MailSettings:SmtpPort"]);
+    var senderEmail = _config["MailSettings:SenderEmail"];
+    var senderPassword = _config["MailSettings:SenderPassword"];
+    var adminEmail = _config["MailSettings:AdminEmail"];
+
+    string htmlBody = $"<b>Nouvelle demande de crédit reçue</b><br><br>" +
+                      "Un client vient de soumettre une demande de crédit via la plateforme.<br><br>" +
+                      "Merci de consulter votre interface d’administration pour plus de détails.";
+
+    string plainBody = $"Nouvelle demande de crédit reçue\n\n" +
+                       "Un client vient de soumettre une demande de crédit via la plateforme.\n\n" +
+                       "Merci de consulter votre interface d’administration pour plus de détails.";
+
+    var message = new MailMessage
+    {
+        From = new MailAddress(senderEmail, "STB Bank - Notification"),
+        Subject = "🔔 Nouvelle demande de crédit",
+        SubjectEncoding = Encoding.UTF8,
+        BodyEncoding = Encoding.UTF8
+    };
+
+    message.AlternateViews.Add(
+        AlternateView.CreateAlternateViewFromString(plainBody, Encoding.UTF8, "text/plain"));
+    message.AlternateViews.Add(
+        AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html"));
+
+    message.To.Add(adminEmail);
+
+    using var smtp = new SmtpClient(smtpHost, smtpPort)
+    {
+        Credentials = new NetworkCredential(senderEmail, senderPassword),
+        EnableSsl = true
+    };
+
+    await smtp.SendMailAsync(message);
+}
+
     }
 }
