@@ -13,7 +13,8 @@ namespace DepotDocuments.API.Controllers
     {
         private readonly IMongoCollection<DepotDemande> _demandeCollection;
         private readonly MailService _mailService;
-
+        //private readonly BrevoHttpMailService _mailService;
+        //public DepotDemandeController(IConfiguration config, BrevoHttpMailService mailService)
         public DepotDemandeController(IConfiguration config, MailService mailService)
         {
             var connectionString = config["DepotDemandeSettings:ConnectionString"];
@@ -54,7 +55,7 @@ namespace DepotDocuments.API.Controllers
 
             // Envoi de l’email de confirmation
             await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
-
+            //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
             return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
         }
     }

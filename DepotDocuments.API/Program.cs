@@ -27,6 +27,7 @@ builder.Services.AddScoped<OcrDispatcherService>();
 builder.Services.AddScoped<CloudinaryService>();
 builder.Services.AddScoped<MailService>();
 builder.Services.AddScoped<ICreditDocumentService, CreditDocumentService>();
+//builder.Services.AddSingleton<BrevoHttpMailService>();
 // Enregistrement du service de MongoDB
 builder.Services.AddScoped<IDocumentContext, DocumentContext>();  // Enregistrer le DocumentContext pour l'accès à MongoDB
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();  // Enregistrer le repository de documents
