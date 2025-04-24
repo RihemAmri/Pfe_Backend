@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DepotDocuments.API.DTO;
-
+using MongoDB.Bson;
 namespace DepotDocuments.API.Controllers
 {
     [ApiController]
@@ -50,4 +50,18 @@ namespace DepotDocuments.API.Controllers
             return BadRequest(new { error = ex.Message });
         }
     }
+   [HttpPost("by-ids")]
+    public async Task<IActionResult> GetDocumentsByIds([FromBody] List<string> ids)
+    {
+        try
+        {
+            var documents = await _creditDocumentService.GetDocumentsByIdsAsync(ids);
+            return Ok(documents);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
 }}

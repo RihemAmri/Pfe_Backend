@@ -1,7 +1,7 @@
 using DepotDocuments.API.Entities;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
-
+using MongoDB.Bson;
 public class CreditDocumentService : ICreditDocumentService
 {
     private readonly IMongoCollection<CreditDocument> _documents;
@@ -21,4 +21,8 @@ public class CreditDocumentService : ICreditDocumentService
     {
         await _documents.InsertManyAsync(documents);
     }
+  public async Task<List<CreditDocument>> GetDocumentsByIdsAsync(List<string> ids)
+{
+    return await _documents.Find(doc => ids.Contains(doc.Id)).ToListAsync();
+}
 }
