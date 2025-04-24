@@ -4,7 +4,8 @@ using MongoDB.Driver;
 using DepotDocuments.API.DTO;
 using DepotDocuments.API.Entities;
 using DepotDocuments.API.Services;
-
+using System.Net.Http;
+using System.Net.Http.Json;
 namespace DepotDocuments.API.Controllers
 {
     [ApiController]
@@ -13,9 +14,10 @@ namespace DepotDocuments.API.Controllers
     {
         private readonly IMongoCollection<DepotDemande> _demandeCollection;
         private readonly MailService _mailService;
+        private readonly IHttpClientFactory _httpClientFactory;
         //private readonly BrevoHttpMailService _mailService;
         //public DepotDemandeController(IConfiguration config, BrevoHttpMailService mailService)
-        public DepotDemandeController(IConfiguration config, MailService mailService)
+        public DepotDemandeController(IConfiguration config, MailService mailService,IHttpClientFactory httpClientFactory)
         {
             var connectionString = config["DepotDemandeSettings:ConnectionString"];
             var databaseName = config["DepotDemandeSettings:DatabaseName"];
@@ -25,6 +27,7 @@ namespace DepotDocuments.API.Controllers
             var database = client.GetDatabase(databaseName);
             _demandeCollection = database.GetCollection<DepotDemande>(collectionName);
             _mailService = mailService;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpPost]
@@ -55,6 +58,18 @@ namespace DepotDocuments.API.Controllers
 
             // Envoi de l’email de confirmation
             await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
+            await _mailService.EnvoyerNotificationAdmin();
+             // 🚀 Appel à Notification.API
+        var client = _httpClientFactory.CreateClient("NotificationApi");
+        var notif = new NotificationDto{
+            DestinataireId = "6807f3958d2732dd1864cd9b", 
+            Message = $"Le client {depot.UserId} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
+            Date = DateTime.UtcNow,
+            Lu = false,
+            Type = "demande"
+        };
+        await client.PostAsJsonAsync("api/Notification", notif);
+
             //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
             return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
         }

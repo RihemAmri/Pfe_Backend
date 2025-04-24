@@ -22,6 +22,11 @@ builder.Services.AddScoped<IOcrProcessor, CinOcrProcessor>();  // Tu peux ajoute
  builder.Services.AddScoped<IOcrProcessor, FichePaieOcrProcessor>();
 builder.Services.AddScoped<IOcrProcessor, AttestationSalaireOcrProcessor>();
 builder.Services.AddScoped<OcrConfigService>();
+var notificationApiUrl = builder.Configuration["NOTIFICATION_API_URL"];
+builder.Services.AddHttpClient("NotificationApi", client =>
+{
+    client.BaseAddress = new Uri(notificationApiUrl);
+});
 
 builder.Services.AddScoped<OcrDispatcherService>();
 builder.Services.AddScoped<CloudinaryService>();
