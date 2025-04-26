@@ -121,6 +121,7 @@ public async Task<IActionResult> GetAllDeclarationsWithReponses()
         result.Add(new { declaration = dec, responses });
     }
 
+
     return Ok(result);
 }
 
