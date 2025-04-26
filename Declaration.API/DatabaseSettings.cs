@@ -1,4 +1,4 @@
-namespace Notification.API
+namespace Declarations.API
 {
     public class DatabaseSettings
     {

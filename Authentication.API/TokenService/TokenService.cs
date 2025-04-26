@@ -18,11 +18,14 @@ namespace Authentication.API.Services
 
         public string GenerateToken(Utilisateur utilisateur)
         {
+            var adminId = "6807f3958d2732dd1864cd9b";
             // Crée les informations de l'utilisateur pour le token
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, utilisateur.Id.ToString()),
                 new Claim(ClaimTypes.Name, utilisateur.Nom),
+                
+                
                 new Claim(ClaimTypes.Email, utilisateur.Email),
                 new Claim(ClaimTypes.Role, utilisateur.Role)
             };

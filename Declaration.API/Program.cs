@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using Notification.API;
+using Declarations.API;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +10,12 @@ builder.WebHost.UseUrls("http://*:4008");
 // 2️⃣ Bind de la section "DatabaseSettings" du appsettings.json
 builder.Services.Configure<DatabaseSettings>(
     builder.Configuration.GetSection("DatabaseSettings"));
+var notificationApiUrl = builder.Configuration["NOTIFICATION_API_URL"];
+builder.Services.AddHttpClient("NotificationApi", client =>
+{
+    client.BaseAddress = new Uri(notificationApiUrl);
+});
+
 
 // 3️⃣ Enregistrer MongoDB et NotificationService dans l'injection de dépendances
 builder.Services.AddSingleton<IMongoDatabase>(serviceProvider =>
