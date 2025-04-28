@@ -1,8 +1,9 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 public class CloudinaryService
 {
@@ -14,19 +15,45 @@ public class CloudinaryService
         _cloudinary = new Cloudinary(cloudinaryAccount);
     }
 
-    public async Task<CloudinaryDotNet.Actions.ImageUploadResult> UploadImageAsync(IFormFile file)
+    public async Task<string> UploadFileAsync(IFormFile file)
     {
         if (file == null)
         {
             throw new ArgumentNullException(nameof(file), "File cannot be null.");
         }
 
-        var uploadParams = new CloudinaryDotNet.Actions.ImageUploadParams()
-        {
-            File = new FileDescription(file.FileName, file.OpenReadStream())
-        };
+        // Détecter le type MIME du fichier
+        var mimeType = file.ContentType.ToLower();
 
-        var result = await _cloudinary.UploadAsync(uploadParams);
-        return result;
+        if (mimeType.StartsWith("image/"))
+        {
+            // C'est une image ➔ upload image
+            var uploadParams = new ImageUploadParams()
+            {
+                File = new FileDescription(file.FileName, file.OpenReadStream()),
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false,
+                AccessMode = "public"
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            return result.SecureUrl.AbsoluteUri;
+        }
+        else
+        {
+            // Ce n'est PAS une image ➔ upload raw (PDF, Word, etc.)
+            var uploadParams = new RawUploadParams()
+            {
+                File = new FileDescription(file.FileName, file.OpenReadStream()),
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false,
+                AccessMode = "public"
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            return result.SecureUrl.AbsoluteUri;
+        }
     }
 }

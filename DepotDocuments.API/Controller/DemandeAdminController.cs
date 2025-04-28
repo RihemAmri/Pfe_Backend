@@ -23,11 +23,19 @@ namespace DepotDocuments.API.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllDemandes()
-        {
-            var demandes = await _demandeCollection.Find(_ => true).ToListAsync();
-            return Ok(demandes);
-        }
+public async Task<IActionResult> GetAllDemandes()
+{
+    try
+    {
+        var demandes = await _demandeCollection.Find(_ => true).ToListAsync();
+        return Ok(demandes);
+    }
+    catch (Exception ex)
+    {
+        // Log l'erreur ici (ou retourne un message d'erreur)
+        return StatusCode(500, $"Une erreur est survenue: {ex.Message}");
+    }
+}
     [HttpGet("statut/{statut}")]
     public async Task<IActionResult> GetDemandesByStatut(string statut)
     {

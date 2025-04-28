@@ -37,9 +37,9 @@ namespace DepotDocuments.API.Controllers
                 return BadRequest("Fichier manquant.");
 
             // 1. Upload vers Cloudinary
-            var uploadResult = await _uploadService.UploadImageAsync(request.File);
-            var imageUrl = uploadResult.SecureUrl.ToString();
-
+           //var uploadResult = await _uploadService.UploadImageAsync(request.File);
+            //var imageUrl = uploadResult.SecureUrl.ToString();
+            var imageUrl = await _uploadService.UploadFileAsync(request.File);
             // 2. Traitement OCR
             var extractedText = await _ocrDispatcher.ProcessAsync(request.File, request.TypeDocument);
 
@@ -72,11 +72,14 @@ namespace DepotDocuments.API.Controllers
                 return BadRequest("Fichier non valide.");
             }
 
-            var uploadResult = await _uploadService.UploadImageAsync(file);
+            /*var uploadResult = await _uploadService.UploadImageAsync(file);
 
             return Ok(new {
                 imageUrl = uploadResult.SecureUrl.ToString()
-            });
+            });*/
+            var imageUrl = await _uploadService.UploadFileAsync(file);
+
+            return Ok(new { imageUrl });
         }
 
     }

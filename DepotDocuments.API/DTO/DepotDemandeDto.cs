@@ -9,6 +9,8 @@ public class DepotDemandeDto
     public string Email { get; set; }
     public string Adresse { get; set; }
     public string Cin { get; set; }
+
+     public string NumeroCompte { get; set; }
     public string DateNaissance { get; set; }
     public string Telephone { get; set; }
     public string Civilite { get; set; }
@@ -23,5 +25,6 @@ public class DepotDemandeDto
     public string AttestationSalaireOcr { get; set; }
 
     public List<string> DocumentIds { get; set; }
+    public DateTime? DateDerniereModification { get; set; }
 }
 }

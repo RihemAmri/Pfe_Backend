@@ -18,7 +18,7 @@ public class DepotDemande
     public string Email { get; set; }
     public string Adresse { get; set; }
     public string Cin { get; set; }
-
+    public string NumeroCompte { get; set; }
     public string DateNaissance { get; set; }
     public string Telephone { get; set; }
     public string Civilite { get; set; }
@@ -37,8 +37,11 @@ public class DepotDemande
     // Liste des IDs de documents liés
     public List<string> DocumentIds { get; set; }
     
+    
     public string Statut { get; set; } = "soumise";
     // Date de soumission
     public DateTime DateDepot { get; set; } = DateTime.UtcNow;
+
+    public DateTime? DateDerniereModification { get; set; }
 }
 }

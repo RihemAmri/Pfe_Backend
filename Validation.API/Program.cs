@@ -1,18 +1,56 @@
-var builder = WebApplication.CreateBuilder(args);
+using DinkToPdf;
+using DinkToPdf.Contracts;
+using Validation.API.Services;
+using Validation.API.Repositories;
+using System.Reflection;
+using System.Runtime.Loader;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    WebRootPath = "wwwroot",
+    Args = args
+});
 
+
+// Charger la DLL native wkhtmltox
+var wkHtmlToPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "DinkToPdfLib", "64 bit", "libwkhtmltox.dll");
+var context = new CustomAssemblyLoadContext();
+context.LoadUnmanagedLibrary(wkHtmlToPdfPath);
+//builder.WebHost.UseWebRoot("wwwroot");
+// Add services to the container
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
+builder.Services.AddScoped<IValidationRepository, ValidationRepository>();
+builder.Services.AddScoped<PdfService>();
+builder.Services.AddScoped<EmailService>();
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+app.UseStaticFiles();
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthorization();
+app.MapControllers();
 
 var summaries = new[]
 {
@@ -21,7 +59,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),

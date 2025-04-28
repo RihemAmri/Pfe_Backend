@@ -41,6 +41,7 @@ namespace DepotDocuments.API.Controllers
                 Email = dto.Email,
                 Adresse = dto.Adresse,
                 Cin = dto.Cin,
+                NumeroCompte = dto.NumeroCompte,
                 DateNaissance = dto.DateNaissance,
                 Telephone = dto.Telephone,
                 Civilite = dto.Civilite,
@@ -51,7 +52,8 @@ namespace DepotDocuments.API.Controllers
                 TypeFinancement = dto.TypeFinancement,
                 RevenuMensuelOcr = dto.RevenuMensuelOcr,
                 AttestationSalaireOcr = dto.AttestationSalaireOcr,
-                DocumentIds = dto.DocumentIds ?? new List<string>()
+                DocumentIds = dto.DocumentIds ?? new List<string>(),
+                DateDerniereModification = DateTime.UtcNow
             };
 
             await _demandeCollection.InsertOneAsync(depot);
