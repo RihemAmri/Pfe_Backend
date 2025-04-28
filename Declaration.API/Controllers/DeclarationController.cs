@@ -1,131 +1,140 @@
-// Fichier: Notification.API/Controllers/DeclarationController.cs
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using Notification.API.Entities;
-using Notification.API.DTO;
+using Declarations.API.Entities;
+using Declarations.API.DTO;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Notification.API.Controllers
+namespace Declarations.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class DeclarationController : ControllerBase
     {
         private readonly IMongoCollection<Declaration> _declarations;
+        private readonly IMongoCollection<Reponse> _reponses;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public DeclarationController(IMongoDatabase database)
+        public DeclarationController(IMongoDatabase db, IHttpClientFactory httpClientFactory)
         {
-            _declarations = database.GetCollection<Declaration>("declarations");
+            _declarations = db.GetCollection<Declaration>("declarations");
+            _reponses = db.GetCollection<Reponse>("reponses");
+            _httpClientFactory = httpClientFactory;
         }
 
-        // POST: api/declaration
         [HttpPost]
         public async Task<IActionResult> CreateDeclaration([FromBody] DeclarationDTO dto)
         {
             var declaration = new Declaration
             {
                 SenderId = dto.SenderId,
-                RecipientId = dto.RecipientId,
+                Sujet = dto.Sujet,
                 Content = dto.Content,
                 SentAt = DateTime.UtcNow,
-                IsReadByRecipient = dto.IsReadByRecipient,
-                Status = dto.Status
+                Status = "En attente"
             };
 
             await _declarations.InsertOneAsync(declaration);
-            return CreatedAtAction(nameof(GetDeclaration), new { id = declaration.Id_Declaration }, declaration);
-        }
 
-        // GET: api/declaration/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetDeclaration(string id)
-        {
-            var declaration = await _declarations
-                .Find(d => d.Id_Declaration == id)
-                .FirstOrDefaultAsync();
-
-            if (declaration == null)
-                return NotFound();
-
+            // 🚀 Appel à Notification.API pour l'admin
+            var client = _httpClientFactory.CreateClient("NotificationApi");
+            var notif = new CreateNotificationDto
+            {
+                DestinataireId = "6807f3958d2732dd1864cd9b", // 🧠 ID Admin
+                Message = $"Nouvelle déclaration reçue de l'utilisateur {dto.SenderId} : \"{dto.Sujet}\"",
+                Date = DateTime.UtcNow,
+                Lu = false,
+                Type = "declaration"
+            };
+            await client.PostAsJsonAsync("api/Notification", notif);
+              
             return Ok(declaration);
         }
 
-        // PUT: api/declaration/{id}/read
-        [HttpPut("{id}/read")]
-        public async Task<IActionResult> MarkAsRead(string id)
+        [HttpGet("mine/{userId}")]
+        public async Task<IActionResult> GetUserDeclarations(string userId)
         {
-            var filter = Builders<Declaration>.Filter.Eq(d => d.Id_Declaration, id);
-            var update = Builders<Declaration>.Update.Set(d => d.IsReadByRecipient, true);
-
-            var result = await _declarations.UpdateOneAsync(filter, update);
-            if (result.MatchedCount == 0)
-                return NotFound();
-
-            return NoContent();
+            var declarations = await _declarations.Find(d => d.SenderId == userId).ToListAsync();
+            var result = new List<object>();
+            foreach (var dec in declarations)
+            {
+                var responses = await _reponses.Find(r => r.DeclarationId == dec.id_declaration).ToListAsync();
+                result.Add(new { dec, responses });
+            }
+            return Ok(result);
         }
 
-        // GET: api/declaration
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllDeclarations()
         {
             var declarations = await _declarations.Find(_ => true).ToListAsync();
             return Ok(declarations);
         }
 
-        // DELETE: api/declaration/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDeclaration(string id)
+        [HttpPost("reponse")]
+        public async Task<IActionResult> AddReponse([FromBody] ReponseDTO dto)
         {
-            var filter = Builders<Declaration>.Filter.Eq(d => d.Id_Declaration, id);
-            var result = await _declarations.DeleteOneAsync(filter);
+            var reponse = new Reponse
+            {
+                DeclarationId = dto.DeclarationId,
+                Message = dto.Message,
+                SentAt = DateTime.UtcNow
+            };
 
-            if (result.DeletedCount == 0)
-                return NotFound();
+            await _reponses.InsertOneAsync(reponse);
+            await _declarations.UpdateOneAsync(
+                d => d.id_declaration == dto.DeclarationId,
+                Builders<Declaration>.Update.Set(d => d.Status, "Repondu")
+            );
 
-            return NoContent();
+            var declaration = await _declarations.Find(d => d.id_declaration == dto.DeclarationId).FirstOrDefaultAsync();
+            if (declaration != null)
+            {
+                var client = _httpClientFactory.CreateClient("NotificationApi");
+                var notif = new CreateNotificationDto
+                {
+                    DestinataireId = declaration.SenderId,
+                    Message = $"Votre déclaration \"{declaration.Sujet}\" a reçu une réponse.",
+                    Date = DateTime.UtcNow,
+                    Lu = false,
+                    Type = "repdeclaration"
+                };
+                await client.PostAsJsonAsync("api/Notification", notif);
+
+                return Ok(reponse);
+            }
+
+            // Si la déclaration est introuvable
+            return NotFound("Déclaration non trouvée");
         }
+        [HttpGet("all-with-reponses")]
+public async Task<IActionResult> GetAllDeclarationsWithReponses()
+{
+    var declarations = await _declarations.Find(_ => true).ToListAsync();
+    var result = new List<object>();
 
-        // GET: api/declaration/sender/{senderId}
-        [HttpGet("sender/{senderId}")]
-        public async Task<IActionResult> GetDeclarationsBySender(string senderId)
+    // Pour chaque déclaration, récupérer les réponses associées
+    foreach (var dec in declarations)
+    {
+        var responses = await _reponses.Find(r => r.DeclarationId == dec.id_declaration).ToListAsync();
+        result.Add(new { declaration = dec, responses });
+    }
+
+
+    return Ok(result);
+}
+
+
+        [HttpGet("thread/{id}")]
+        public async Task<IActionResult> GetThread(string id)
         {
-            var declarations = await _declarations
-                .Find(d => d.SenderId == senderId)
-                .ToListAsync();
-
-            if (declarations == null || declarations.Count == 0)
+            var declaration = await _declarations.Find(d => d.id_declaration == id).FirstOrDefaultAsync();
+            if (declaration == null)
                 return NotFound();
 
-            return Ok(declarations);
-        }
-
-        // GET: api/declaration/recipient/{recipientId}
-        [HttpGet("recipient/{recipientId}")]
-        public async Task<IActionResult> GetDeclarationsByRecipient(string recipientId)
-        {
-            var declarations = await _declarations
-                .Find(d => d.RecipientId == recipientId)
-                .ToListAsync();
-
-            if (declarations == null || declarations.Count == 0)
-                return NotFound();
-
-            return Ok(declarations);
-        }
-
-        // GET: api/declaration/sender/{senderId}/recipient/{recipientId}
-        [HttpGet("sender/{senderId}/recipient/{recipientId}")]
-        public async Task<IActionResult> GetDeclarationsBySenderAndRecipient(string senderId, string recipientId)
-        {
-            var declarations = await _declarations
-                .Find(d => d.SenderId == senderId && d.RecipientId == recipientId)
-                .ToListAsync();
-
-            if (declarations == null || declarations.Count == 0)
-                return NotFound();
-
-            return Ok(declarations);
+            var responses = await _reponses.Find(r => r.DeclarationId == id).ToListAsync();
+            return Ok(new { declaration, responses });
         }
     }
 }

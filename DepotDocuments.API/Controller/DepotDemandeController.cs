@@ -15,6 +15,7 @@ namespace DepotDocuments.API.Controllers
         private readonly IMongoCollection<DepotDemande> _demandeCollection;
         private readonly MailService _mailService;
         private readonly IHttpClientFactory _httpClientFactory;
+        
         //private readonly BrevoHttpMailService _mailService;
         //public DepotDemandeController(IConfiguration config, BrevoHttpMailService mailService)
         public DepotDemandeController(IConfiguration config, MailService mailService,IHttpClientFactory httpClientFactory)
@@ -64,7 +65,7 @@ namespace DepotDocuments.API.Controllers
              // 🚀 Appel à Notification.API
         var client = _httpClientFactory.CreateClient("NotificationApi");
         var notif = new NotificationDto{
-            DestinataireId = "6807f3958d2732dd1864cd9b", 
+            DestinataireId = "6807f3958d2732dd1864cd9b", //⚠️nodnod badil lina 
             Message = $"Le client {depot.UserId} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
             Date = DateTime.UtcNow,
             Lu = false,
