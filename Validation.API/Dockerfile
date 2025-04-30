@@ -2,11 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copier le fichier .csproj et restaurer les dépendances
 COPY ./Validation.API.csproj ./
 RUN dotnet restore "Validation.API.csproj"
 
-# Copier tout le reste du code et publier le projet en mode Release
 COPY . ./
 RUN dotnet publish "Validation.API.csproj" -c Release -o /app/publish
 
@@ -14,11 +12,16 @@ RUN dotnet publish "Validation.API.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 
-# Copier l'application publiée depuis l'étape Build
-COPY --from=build /app/publish ./
+# ❗ Installer les dépendances nécessaires pour wkhtmltopdf
+RUN apt-get update && \
+    apt-get install -y libgdiplus libx11-dev && \
+    apt-get clean
 
-# Exposer le port utilisé par l'application (ici 80)
+# 📁 Ajouter wkhtmltopdf (important pour DinkToPdf)
+COPY ./DinkToPdfLib/linux64/libwkhtmltox.so /usr/lib/libwkhtmltox.so
+COPY DinkToPdfLib/linux64/libwkhtmltox.so /app/DinkToPdfLib/linux64/
+
+COPY --from=build /app/publish .
+
 EXPOSE 80
-
-# Lancer l'application
 ENTRYPOINT ["dotnet", "Validation.API.dll"]
