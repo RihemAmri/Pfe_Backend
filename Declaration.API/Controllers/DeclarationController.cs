@@ -42,7 +42,7 @@ namespace Declarations.API.Controllers
             var notif = new CreateNotificationDto
             {
                 DestinataireId = "6807f3958d2732dd1864cd9b", // 🧠 ID Admin
-                Message = $"Nouvelle déclaration reçue de l'utilisateur {dto.SenderId} : \"{dto.Sujet}\"",
+                Message = $"Nouvelle déclaration reçue : \"{dto.Sujet}\"",
                 Date = DateTime.UtcNow,
                 Lu = false,
                 Type = "declaration"
@@ -123,6 +123,30 @@ public async Task<IActionResult> GetAllDeclarationsWithReponses()
 
 
     return Ok(result);
+}
+
+[HttpDelete("delete/{id}")]
+public async Task<IActionResult> DeleteDeclaration(string id)
+{
+    // Supprimer les réponses associées à la déclaration
+    var deleteResponsesResult = await _reponses.DeleteManyAsync(r => r.DeclarationId == id);
+    
+    // Vérifier si des réponses ont été supprimées
+    if (deleteResponsesResult.DeletedCount == 0)
+    {
+        return NotFound("Aucune réponse associée à cette déclaration.");
+    }
+
+    // Supprimer la déclaration elle-même
+    var deleteDeclarationResult = await _declarations.DeleteOneAsync(d => d.id_declaration == id);
+
+    // Vérifier si la déclaration a été supprimée
+    if (deleteDeclarationResult.DeletedCount == 0)
+    {
+        return NotFound("Déclaration non trouvée.");
+    }
+
+    return Ok("Déclaration et réponses associées supprimées avec succès.");
 }
 
 

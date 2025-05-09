@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Declaration.API", "Declarat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.API", "Validation.API\Validation.API.csproj", "{686BCEAC-C6A0-420E-85BA-8AC0FC56D0A6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Credit.API", "Credit.API\Credit.API.csproj", "{5CC71031-EB54-4229-8C0E-E24EE28A3A39}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,6 +108,18 @@ Global
 		{686BCEAC-C6A0-420E-85BA-8AC0FC56D0A6}.Release|x64.Build.0 = Release|Any CPU
 		{686BCEAC-C6A0-420E-85BA-8AC0FC56D0A6}.Release|x86.ActiveCfg = Release|Any CPU
 		{686BCEAC-C6A0-420E-85BA-8AC0FC56D0A6}.Release|x86.Build.0 = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|x64.Build.0 = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Debug|x86.Build.0 = Debug|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|x64.ActiveCfg = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|x64.Build.0 = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|x86.ActiveCfg = Release|Any CPU
+		{5CC71031-EB54-4229-8C0E-E24EE28A3A39}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
