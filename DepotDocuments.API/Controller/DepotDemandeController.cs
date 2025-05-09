@@ -4,6 +4,8 @@ using MongoDB.Driver;
 using DepotDocuments.API.DTO;
 using DepotDocuments.API.Entities;
 using DepotDocuments.API.Services;
+using DepotDocuments.API.Services.Ocr.Interfaces;
+
 using System.Net.Http;
 using System.Net.Http.Json;
 namespace DepotDocuments.API.Controllers
@@ -30,6 +32,7 @@ namespace DepotDocuments.API.Controllers
             _mailService = mailService;
             _httpClientFactory = httpClientFactory;
         }
+        
 
         [HttpPost]
         public async Task<IActionResult> EnregistrerDepotDemande([FromBody] DepotDemandeDto dto)
@@ -66,7 +69,7 @@ namespace DepotDocuments.API.Controllers
         var client = _httpClientFactory.CreateClient("NotificationApi");
         var notif = new NotificationDto{
             DestinataireId = "6807f3958d2732dd1864cd9b", //⚠️nodnod badil lina 
-            Message = $"Le client {depot.UserId} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
+            Message = $"Le client {depot.NumeroCompte} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
             Date = DateTime.UtcNow,
             Lu = false,
             Type = "demande"
@@ -76,5 +79,7 @@ namespace DepotDocuments.API.Controllers
             //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
             return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
         }
+       
+
     }
 }

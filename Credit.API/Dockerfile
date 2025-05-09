@@ -4,17 +4,17 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 # Définir le répertoire de travail
 WORKDIR /src
 
-# Copier le fichier .csproj du projet DepotDocuments.API
-COPY ./DepotDocuments.API.csproj ./
+# Copier le fichier .csproj du projet Credit.API
+COPY ./Credit.API.csproj ./
 
 # Restaurer les dépendances du projet
-RUN dotnet restore "DepotDocuments.API.csproj"
+RUN dotnet restore "Credit.API.csproj"
 
 # Copier le reste des fichiers du projet dans le conteneur
 COPY . .
 
 # Publier le projet en mode Release
-RUN dotnet publish "DepotDocuments.API.csproj" -c Release -o /app/publish
+RUN dotnet publish "Credit.API.csproj" -c Release -o /app/publish
 
 # Étape 2 : Créer l'image de l'application finale
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
@@ -29,4 +29,4 @@ COPY --from=build /app/publish .
 EXPOSE 80
 
 # Définir le point d'entrée de l'application
-ENTRYPOINT ["dotnet", "DepotDocuments.API.dll"]
+ENTRYPOINT ["dotnet", "Credit.API.dll"]
