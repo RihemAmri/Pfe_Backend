@@ -43,5 +43,7 @@ public class DepotDemande
     public DateTime DateDepot { get; set; } = DateTime.UtcNow;
 
     public DateTime? DateDerniereModification { get; set; }
+
+    public string? PdfBase64 { get; set; }
 }
 }

@@ -10,6 +10,8 @@
     <!-- Gestion des mots de passe hachés -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CloudinaryDotNet" Version="1.26.0" />
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.1.0" />
     
     <!-- Driver MongoDB -->
     <PackageReference Include="MongoDB.Driver" Version="3.3.0" />
@@ -23,6 +25,10 @@
     
     <!-- Pour l'utilisation de IHttpClientFactory (AddHttpClient) -->
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <None Update="libs\wkhtmltopdf\libwkhtmltox.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
   </ItemGroup>
 
 </Project>

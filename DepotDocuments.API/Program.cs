@@ -9,6 +9,14 @@ using DepotDocuments.API.Data;  // Ajouter l'importation pour DocumentContext
 using DepotDocuments.API.Router;
 using DepotDocuments.API.Repositories; // 🔧 à ajouter tout en haut
 using DepotDocuments.API.Services;
+using DinkToPdf;
+using DinkToPdf.Contracts;
+using System.Runtime.InteropServices;
+
+var context = new CustomAssemblyLoadContext();
+
+var wkhtmlPath = Path.Combine(AppContext.BaseDirectory, "libs", "wkhtmltopdf", "libwkhtmltox.dll");
+context.LoadUnmanagedLibrary(wkhtmlPath);
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure la prise en charge de la connexion au service via l'URL
@@ -16,6 +24,7 @@ builder.WebHost.UseUrls("http://*:4002");
 
 // Ajout des services à l'application
 builder.Services.AddControllers();
+builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
 // Enregistrer les services pour l'OCR et l'upload Cloudinary
 builder.Services.AddScoped<IOcrProcessor, CinOcrProcessor>();  // Tu peux ajouter plus d'implementations pour OCR selon tes besoins
@@ -28,12 +37,15 @@ builder.Services.AddHttpClient("NotificationApi", client =>
     client.BaseAddress = new Uri(notificationApiUrl);
 });
 
+builder.Services.AddSingleton<PdfService>();
 builder.Services.AddScoped<OcrDispatcherService>();
 builder.Services.AddScoped<CloudinaryService>();
 builder.Services.AddScoped<MailService>();
 builder.Services.AddScoped<ICreditDocumentService, CreditDocumentService>();
 //builder.Services.AddSingleton<BrevoHttpMailService>();
 // Enregistrement du service de MongoDB
+builder.Services.AddScoped<DocuSignService>();
+builder.Services.AddScoped<YousignService>();
 builder.Services.AddScoped<IDocumentContext, DocumentContext>();  // Enregistrer le DocumentContext pour l'accès à MongoDB
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();  // Enregistrer le repository de documents
 builder.Services.AddHttpClient();
@@ -70,3 +82,20 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+public class CustomAssemblyLoadContext : System.Runtime.Loader.AssemblyLoadContext
+{
+    public IntPtr LoadUnmanagedLibrary(string absolutePath)
+    {
+        return LoadUnmanagedDll(absolutePath);
+    }
+
+    protected override IntPtr LoadUnmanagedDll(String unmanagedDllPath)
+    {
+        return LoadUnmanagedDllFromPath(unmanagedDllPath);
+    }
+
+    protected override System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyName)
+    {
+        return null;
+    }
+}

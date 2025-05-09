@@ -26,5 +26,6 @@ public class DepotDemandeDto
 
     public List<string> DocumentIds { get; set; }
     public DateTime? DateDerniereModification { get; set; }
+    public string? PdfBase64 { get; set; }
 }
 }

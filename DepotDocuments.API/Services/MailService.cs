@@ -103,5 +103,48 @@ namespace DepotDocuments.API.Services
     await smtp.SendMailAsync(message);
 }
 
+        public async Task EnvoyerMailConfirmationAvecPdf(string destinataire, string nomComplet, byte[] pdfAttachment)
+        {
+            var smtpHost = _config["MailSettings:SmtpHost"];
+            var smtpPort = int.Parse(_config["MailSettings:SmtpPort"]);
+            var senderEmail = _config["MailSettings:SenderEmail"];
+            var senderPassword = _config["MailSettings:SenderPassword"];
+
+            string htmlBody = $"Madame, Monsieur {nomComplet},<br><br>" +
+                "Veuillez trouver en pièce jointe un récapitulatif signé de votre demande de crédit.<br><br>" +
+                "Nous étudierons votre dossier dans les plus brefs délais.<br><br>" +
+                "Cordialement,<br>STB Bank";
+
+            string plainBody = $"Madame, Monsieur {nomComplet},\n\n" +
+                "Veuillez trouver en pièce jointe un récapitulatif signé de votre demande de crédit.\n\n" +
+                "Nous étudierons votre dossier dans les plus brefs délais.\n\n" +
+                "Cordialement,\nSTB Bank";
+
+            var message = new MailMessage
+            {
+                From = new MailAddress(senderEmail, "STB Bank"),
+                Subject = "📝 Votre demande de crédit signée",
+                SubjectEncoding = Encoding.UTF8,
+                BodyEncoding = Encoding.UTF8
+            };
+
+            message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(plainBody, Encoding.UTF8, "text/plain"));
+            message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html"));
+
+            message.To.Add(destinataire);
+
+            // Ajout du PDF en pièce jointe
+            var attachment = new Attachment(new MemoryStream(pdfAttachment), "demande-signee.pdf", "application/pdf");
+            message.Attachments.Add(attachment);
+
+            using var smtp = new SmtpClient(smtpHost, smtpPort)
+            {
+                Credentials = new NetworkCredential(senderEmail, senderPassword),
+                EnableSsl = true
+            };
+
+            await smtp.SendMailAsync(message);
+        }
+
     }
 }
