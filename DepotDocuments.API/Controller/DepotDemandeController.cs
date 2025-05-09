@@ -87,7 +87,7 @@ namespace DepotDocuments.API.Controllers
             }
             await _mailService.EnvoyerNotificationAdmin();
              // 🚀 Appel à Notification.API
-        /*var client = _httpClientFactory.CreateClient("NotificationApi");
+        var client = _httpClientFactory.CreateClient("NotificationApi");
         var notif = new NotificationDto{
             DestinataireId = "6807f3958d2732dd1864cd9b", //⚠️nodnod badil lina 
             Message = $"Le client {depot.NumeroCompte} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
@@ -95,7 +95,7 @@ namespace DepotDocuments.API.Controllers
             Lu = false,
             Type = "demande"
         };
-        await client.PostAsJsonAsync("api/Notification", notif);*/
+        await client.PostAsJsonAsync("api/Notification", notif);
 
             //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
             return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
