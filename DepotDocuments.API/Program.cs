@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 var context = new CustomAssemblyLoadContext();
 
-var wkhtmlPath = Path.Combine(AppContext.BaseDirectory, "libs", "wkhtmltopdf", "libwkhtmltox.dll");
+var wkhtmlPath = Path.Combine(AppContext.BaseDirectory, "DinkToPdfLib", "linux64", "libwkhtmltox.so");
 context.LoadUnmanagedLibrary(wkhtmlPath);
 var builder = WebApplication.CreateBuilder(args);
 
