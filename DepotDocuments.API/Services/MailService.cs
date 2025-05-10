@@ -145,6 +145,36 @@ namespace DepotDocuments.API.Services
 
             await smtp.SendMailAsync(message);
         }
+        public async Task EnvoyerOtpParMail(string destinataire, string code)
+{
+    var smtpHost = _config["MailSettings:SmtpHost"];
+    var smtpPort = int.Parse(_config["MailSettings:SmtpPort"]);
+    var senderEmail = _config["MailSettings:SenderEmail"];
+    var senderPassword = _config["MailSettings:SenderPassword"];
+
+    string htmlBody = $"<p>Votre code de vérification est : <b>{code}</b></p><p>Il expire dans 5 minutes.</p>";
+    string plainBody = $"Votre code de vérification est : {code}\nIl expire dans 5 minutes.";
+
+    var message = new MailMessage
+    {
+        From = new MailAddress(senderEmail, "STB Bank"),
+        Subject = "🔐 Code de vérification",
+        SubjectEncoding = Encoding.UTF8,
+        BodyEncoding = Encoding.UTF8
+    };
+
+    message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(plainBody, Encoding.UTF8, "text/plain"));
+    message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html"));
+    message.To.Add(destinataire);
+
+    using var smtp = new SmtpClient(smtpHost, smtpPort)
+    {
+        Credentials = new NetworkCredential(senderEmail, senderPassword),
+        EnableSsl = true
+    };
+
+    await smtp.SendMailAsync(message);
+}
 
     }
 }
