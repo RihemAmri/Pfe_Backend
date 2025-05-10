@@ -2,14 +2,17 @@ namespace DepotDocuments.API.Services.Ocr
 {
     public class OcrConfigService
     {
-        public string OcrApiKey { get; private set; }
-        public string OcrApiUrl { get; private set; }
+        public string AzureKey { get; private set; }
+        public string AzureEndpoint { get; private set; }
 
         public OcrConfigService()
         {
-            // Initialisation avec ta clé API OCR.space
-            OcrApiKey = "K81831125588957"; // Ta clé API OCR.space
-            OcrApiUrl = "https://api.ocr.space/parse/image"; // URL de l'API OCR.space
+            AzureKey = Environment.GetEnvironmentVariable("AZURE_OCR_KEY") ?? throw new Exception("AZURE_OCR_KEY non défini.");
+            AzureEndpoint = Environment.GetEnvironmentVariable("AZURE_OCR_ENDPOINT") ?? throw new Exception("AZURE_OCR_ENDPOINT non défini.");
+
+            // Facultatif : pour le debug en local
+            Console.WriteLine($"AzureKey: {(string.IsNullOrEmpty(AzureKey) ? "MISSING" : "LOADED")}");
+            Console.WriteLine($"AzureEndpoint: {AzureEndpoint}");
         }
     }
 }

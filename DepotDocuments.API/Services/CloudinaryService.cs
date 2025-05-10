@@ -25,7 +25,9 @@ public class CloudinaryService
         // Détecter le type MIME du fichier
         var mimeType = file.ContentType.ToLower();
 
-        if (mimeType.StartsWith("image/"))
+        
+    if (mimeType.StartsWith("image/") || mimeType == "application/pdf")
+
         {
             // C'est une image ➔ upload image
             var uploadParams = new ImageUploadParams()

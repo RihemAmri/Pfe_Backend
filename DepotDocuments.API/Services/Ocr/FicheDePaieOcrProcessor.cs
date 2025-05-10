@@ -1,11 +1,12 @@
 using DepotDocuments.API.Services.Ocr.Interfaces;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 
 namespace DepotDocuments.API.Services.Ocr
 {
@@ -14,91 +15,124 @@ namespace DepotDocuments.API.Services.Ocr
         private readonly OcrConfigService _ocrConfigService;
         private readonly HttpClient _httpClient;
 
-        public FichePaieOcrProcessor(OcrConfigService ocrConfigService, HttpClient httpClient)
+        public FichePaieOcrProcessor(OcrConfigService ocrConfigService, IHttpClientFactory httpClientFactory)
         {
             _ocrConfigService = ocrConfigService;
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("AzureOcr");
         }
 
         public async Task<string> ExtractTextAsync(IFormFile file)
         {
             try
             {
-                using var content = new MultipartFormDataContent();
                 using var stream = file.OpenReadStream();
 
-                content.Add(new StreamContent(stream), "file", file.FileName);
-                content.Add(new StringContent(_ocrConfigService.OcrApiKey), "apikey");
-                content.Add(new StringContent("false"), "isOverlayRequired");
-
-                var response = await _httpClient.PostAsync(_ocrConfigService.OcrApiUrl, content);
-                var json = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"OCR Response: {json}");
-
-                dynamic result = JsonConvert.DeserializeObject(json);
-
-                if (result?.IsErroredOnProcessing == true)
+                var request = new HttpRequestMessage(HttpMethod.Post, "vision/v3.2/read/analyze")
                 {
-                    var errorMessage = result?.ErrorMessage?.ToString() ?? "Erreur inconnue OCR";
-                    throw new Exception("OCR.space error: " + errorMessage);
-                }
+                    Content = new StreamContent(stream)
+                };
 
-                var extractedText = result?.ParsedResults?[0]?.ParsedText?.ToString();
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                request.Headers.Add("Ocp-Apim-Subscription-Key", _ocrConfigService.AzureKey);
 
-                if (string.IsNullOrWhiteSpace(extractedText))
+                var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Erreur Azure OCR (analyse initiale) : {response.StatusCode}");
+
+                var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(operationLocation))
+                    throw new Exception("En-tête 'Operation-Location' manquant.");
+
+                string resultJson = null;
+                for (int i = 0; i < 10; i++)
                 {
-                    throw new Exception("Aucun texte extrait de l'image.");
-                }
+                    await Task.Delay(1000);
+                    var resultRequest = new HttpRequestMessage(HttpMethod.Get, operationLocation);
+                    var resultResponse = await _httpClient.SendAsync(resultRequest);
+                    resultJson = await resultResponse.Content.ReadAsStringAsync();
 
-                string[] lines = extractedText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    string line = lines[i].ToLower();
-
-                    if (line.Contains("net a payer") || line.Contains("net à payer"))
+                    using var doc = JsonDocument.Parse(resultJson);
+                    if (doc.RootElement.TryGetProperty("status", out var statusElement))
                     {
-                        Console.WriteLine($"Ligne détectée : {lines[i]}");
-
-                        // 1. Essayer de récupérer directement un montant sur la même ligne
-                        var matchSameLine = Regex.Match(lines[i], @"\d[\d\s.,]{2,}");
-                        if (matchSameLine.Success)
-                        {
-                            string montant = matchSameLine.Value.Replace(" ", "").Replace(",", ".");
-                            return $"{montant}";
-                        }
-
-                        // 2. Sinon, essayer la ligne suivante s’il y en a une
-                        if (i + 1 < lines.Length)
-                        {
-                            Console.WriteLine($"Ligne suivante : {lines[i + 1]}");
-                            var matchNextLine = Regex.Match(lines[i + 1], @"\d[\d\s.,]{2,}");
-                            if (matchNextLine.Success)
-                            {
-                                string montant = matchNextLine.Value.Replace(" ", "").Replace(",", ".");
-                                return $"{montant}";
-                            }
-                        }
-
-                        return "Ligne détectée mais aucun montant clair trouvé.";
+                        var status = statusElement.GetString();
+                        if (status == "succeeded")
+                            break;
+                        if (status == "failed")
+                            throw new Exception("Échec de l’analyse OCR.");
                     }
                 }
 
-                // Aucun "Net à Payer" trouvé
-                Console.WriteLine("Texte OCR non interprété correctement. Voici le contenu brut :");
-                foreach (var line in lines)
+                using var finalDoc = JsonDocument.Parse(resultJson);
+                if (!finalDoc.RootElement.TryGetProperty("analyzeResult", out var analyzeResult))
+                    throw new Exception("Clé 'analyzeResult' introuvable dans la réponse Azure OCR.");
+
+                if (!analyzeResult.TryGetProperty("readResults", out var readResults) || readResults.GetArrayLength() == 0)
+                    throw new Exception("Clé 'readResults' vide ou introuvable.");
+
+                var lines = readResults[0].GetProperty("lines");
+                string extractedText = "";
+                foreach (var line in lines.EnumerateArray())
                 {
-                    Console.WriteLine(line);
+                    if (line.TryGetProperty("text", out var textElement))
+                    {
+                        extractedText += textElement.GetString() + "\n";
+                    }
                 }
 
-                return "❌ Ligne 'Net à Payer' non trouvée dans le document OCR.";
+                Console.WriteLine("Texte OCR brut :\n" + extractedText); // Pour debug
+
+                var salaireBrut = ExtraireSalaireBrut(extractedText);
+                return salaireBrut ?? throw new Exception("Montant 'Salaire Brut' non trouvé.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Erreur OCR fiche de paie : {ex.Message}");
                 throw new Exception($"Erreur lors de l'extraction OCR fiche de paie : {ex.Message}", ex);
             }
+        }
+
+        private string ExtraireSalaireBrut(string texte)
+        {
+            var lignes = texte.Split('\n');
+            for (int i = 0; i < lignes.Length; i++)
+            {
+                var ligne = lignes[i].Trim().ToLower();
+
+                // Cas 1 : "Salaire Brut" simple
+                if (ligne == "salaire brut")
+                {
+                    int montantTrouves = 0;
+                    for (int j = 1; j <= 3 && i + j < lignes.Length; j++)
+                    {
+                        var montantMatchs = Regex.Matches(lignes[i + j], @"\d[\d.,]{2,}");
+                        foreach (Match match in montantMatchs)
+                        {
+                            montantTrouves++;
+                            if (montantTrouves == 2) // prendre le 2e montant
+                            {
+                                var montant = match.Value.Replace(",", ".").Replace(" ", "");
+                                return $"{montant}";
+                            }
+                        }
+                    }
+                }
+
+                // Cas 2 : ligne avec code (ex: "18 - SALAIRE BRUT")
+                if (Regex.IsMatch(ligne, @"\b\d+\s*-\s*salaire brut\b"))
+                {
+                    if (i + 1 < lignes.Length)
+                    {
+                        var montantMatch = Regex.Match(lignes[i + 1], @"\d[\d.,]{2,}");
+                        if (montantMatch.Success)
+                        {
+                            var montant = montantMatch.Value.Replace(",", ".").Replace(" ", "");
+                            return $"{montant}";
+                        }
+                    }
+                }
+            }
+
+            return "❌ Salaire brut non trouvé.";
         }
     }
 }
