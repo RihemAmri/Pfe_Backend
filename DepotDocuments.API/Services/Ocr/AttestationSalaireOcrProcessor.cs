@@ -1,9 +1,10 @@
 using DepotDocuments.API.Services.Ocr.Interfaces;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System;
+using System.Text.Json;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -14,84 +15,83 @@ namespace DepotDocuments.API.Services.Ocr
         private readonly OcrConfigService _ocrConfigService;
         private readonly HttpClient _httpClient;
 
-        public AttestationSalaireOcrProcessor(OcrConfigService ocrConfigService, HttpClient httpClient)
+        public AttestationSalaireOcrProcessor(OcrConfigService ocrConfigService, IHttpClientFactory httpClientFactory)
         {
             _ocrConfigService = ocrConfigService;
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("AzureOcr");
         }
 
         public async Task<string> ExtractTextAsync(IFormFile file)
         {
             try
             {
-                using var content = new MultipartFormDataContent();
                 using var stream = file.OpenReadStream();
 
-                content.Add(new StreamContent(stream), "file", file.FileName);
-                content.Add(new StringContent(_ocrConfigService.OcrApiKey), "apikey");
-                content.Add(new StringContent("false"), "isOverlayRequired");
-
-                var response = await _httpClient.PostAsync(_ocrConfigService.OcrApiUrl, content);
-                var json = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"OCR Response: {json}");
-
-                dynamic result = JsonConvert.DeserializeObject(json);
-
-                if (result?.IsErroredOnProcessing == true)
+                // Envoi de la demande à l'API Azure OCR
+                var request = new HttpRequestMessage(HttpMethod.Post, "vision/v3.2/read/analyze")
                 {
-                    var errorMessage = result?.ErrorMessage?.ToString() ?? "Erreur inconnue OCR";
-                    throw new Exception("OCR.space error: " + errorMessage);
-                }
+                    Content = new StreamContent(stream)
+                };
 
-                var extractedText = result?.ParsedResults?[0]?.ParsedText?.ToString();
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
-                if (string.IsNullOrWhiteSpace(extractedText))
+                // En-tête pour la clé d'API Azure
+                var subscriptionKey = _ocrConfigService.AzureKey;
+                request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+                var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception($"Erreur Azure OCR (analyse initiale) : {response.StatusCode}");
+
+                // Récupération de l'URL de la réponse de l'opération
+                var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(operationLocation))
+                    throw new Exception("En-tête 'Operation-Location' manquant.");
+
+                string resultJson = null;
+                // Attente de la réponse finale après analyse
+                for (int i = 0; i < 10; i++)
                 {
-                    throw new Exception("Aucun texte extrait de l'image.");
-                }
+                    await Task.Delay(1000);
+                    var resultRequest = new HttpRequestMessage(HttpMethod.Get, operationLocation);
+                    var resultResponse = await _httpClient.SendAsync(resultRequest);
+                    resultJson = await resultResponse.Content.ReadAsStringAsync();
 
-                string[] lines = extractedText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    Console.WriteLine("Réponse Azure OCR : " + resultJson); // Debug
 
-                for (int i = 0; i < lines.Length; i++)
-                {
-                    string line = lines[i].ToLower();
-
-                    if (line.Contains("total"))
+                    // Vérification du statut de l'analyse
+                    using var doc = JsonDocument.Parse(resultJson);
+                    if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
                     {
-                        Console.WriteLine($"Ligne détectée (total) : {lines[i]}");
-
-                        // Cherche un montant sur la même ligne que "total"
-                        var matchSameLine = Regex.Match(lines[i], @"\d[\d\s.,]{2,}");
-                        if (matchSameLine.Success)
-                        {
-                            string montant = matchSameLine.Value.Replace(" ", "").Replace(",", ".");
-                            return $"{montant}";
-                        }
-
-                        // Sinon, regarde la ligne suivante
-                        if (i + 1 < lines.Length)
-                        {
-                            Console.WriteLine($"Ligne suivante : {lines[i + 1]}");
-                            var matchNextLine = Regex.Match(lines[i + 1], @"\d[\d\s.,]{2,}");
-                            if (matchNextLine.Success)
-                            {
-                                string montant = matchNextLine.Value.Replace(" ", "").Replace(",", ".");
-                                return $"💰 Montant Total Brut Annuel : {montant}";
-                            }
-                        }
-
-                        return "Ligne 'Total' trouvée, mais aucun montant clair n’a été détecté.";
+                        var status = statusElement.GetString();
+                        if (status == "succeeded")
+                            break;
+                        if (status == "failed")
+                            throw new Exception("Échec de l’analyse OCR.");
                     }
                 }
 
-                Console.WriteLine("Texte OCR sans ligne contenant 'Total'. Voici le contenu brut :");
-                foreach (var line in lines)
+                // Parsing de la réponse JSON finale
+                using var finalDoc = JsonDocument.Parse(resultJson);
+                if (!finalDoc.RootElement.TryGetProperty("analyzeResult", out var analyzeResult))
+                    throw new Exception("Clé 'analyzeResult' introuvable dans la réponse Azure OCR.");
+
+                if (!analyzeResult.TryGetProperty("readResults", out var readResults) || readResults.GetArrayLength() == 0)
+                    throw new Exception("Clé 'readResults' vide ou introuvable.");
+
+                var lines = readResults[0].GetProperty("lines");
+                string extractedText = "";
+                foreach (var line in lines.EnumerateArray())
                 {
-                    Console.WriteLine(line);
+                    if (line.TryGetProperty("text", out var textElement))
+                    {
+                        extractedText += textElement.GetString() + "\n";
+                    }
                 }
 
-                return "❌ Ligne 'Total' non trouvée dans l'attestation de salaire.";
+                // Appel à la méthode qui extrait le montant brut annuel
+                var montantTotal = ExtraireMontantTotal(extractedText);
+                return montantTotal ?? throw new Exception("Montant brut annuel introuvable.");
             }
             catch (Exception ex)
             {
@@ -99,5 +99,29 @@ namespace DepotDocuments.API.Services.Ocr
                 throw new Exception($"Erreur lors de l'extraction OCR attestation de salaire : {ex.Message}", ex);
             }
         }
+
+        // Méthode pour extraire le montant total brut annuel
+        private string ExtraireMontantTotal(string texte)
+{
+    // Rechercher une ligne contenant "Total" suivi d'un montant
+    var lignes = texte.Split('\n');
+
+    foreach (var ligne in lignes)
+    {
+        if (ligne.Trim().ToLower().StartsWith("total"))
+        {
+            // Extraire le montant qui suit "Total"
+            var match = Regex.Match(ligne, @"\d[\d\s.,]*");
+            if (match.Success)
+            {
+                string montant = match.Value.Replace(" ", "").Replace(",", ".");
+                return $"{montant}";
+            }
+        }
+    }
+
+    return null;
+}
+
     }
 }

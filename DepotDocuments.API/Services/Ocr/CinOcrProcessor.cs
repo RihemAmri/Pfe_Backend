@@ -1,9 +1,10 @@
 using DepotDocuments.API.Services.Ocr.Interfaces;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System;
+using System.Text.Json;
 using System.Linq;
 
 namespace DepotDocuments.API.Services.Ocr
@@ -13,54 +14,89 @@ namespace DepotDocuments.API.Services.Ocr
         private readonly OcrConfigService _ocrConfigService;
         private readonly HttpClient _httpClient;
 
-        public CinOcrProcessor(OcrConfigService ocrConfigService, HttpClient httpClient)
+        public CinOcrProcessor(OcrConfigService ocrConfigService, IHttpClientFactory httpClientFactory)
         {
             _ocrConfigService = ocrConfigService;
-            _httpClient = httpClient;
+            _httpClient = httpClientFactory.CreateClient("AzureOcr");
         }
 
         public async Task<string> ExtractTextAsync(IFormFile file)
+{
+    try
+    {
+        using var stream = file.OpenReadStream();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "vision/v3.2/read/analyze")
         {
-            try
+            Content = new StreamContent(stream)
+        };
+
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Erreur Azure OCR (analyse initiale) : {response.StatusCode}");
+
+        var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(operationLocation))
+            throw new Exception("En-tête 'Operation-Location' manquant.");
+
+        string resultJson = null;
+        for (int i = 0; i < 10; i++)
+        {
+            await Task.Delay(1000);
+            var resultRequest = new HttpRequestMessage(HttpMethod.Get, operationLocation);
+            resultRequest.Headers.Add("Ocp-Apim-Subscription-Key", _ocrConfigService.AzureKey);
+            var resultResponse = await _httpClient.SendAsync(resultRequest);
+            resultJson = await resultResponse.Content.ReadAsStringAsync();
+
+            Console.WriteLine("Réponse Azure OCR : " + resultJson); // Debug
+
+            using var doc = JsonDocument.Parse(resultJson);
+            if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
             {
-                using var content = new MultipartFormDataContent();
-                using var stream = file.OpenReadStream();
-
-                content.Add(new StreamContent(stream), "file", file.FileName);
-                content.Add(new StringContent(_ocrConfigService.OcrApiKey), "apikey");
-                content.Add(new StringContent("false"), "isOverlayRequired");
-
-                var response = await _httpClient.PostAsync(_ocrConfigService.OcrApiUrl, content);
-                var json = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"OCR Response: {json}");
-
-                dynamic result = JsonConvert.DeserializeObject(json);
-
-                if (result?.IsErroredOnProcessing == true)
-                {
-                    var errorMessage = result?.ErrorMessage?.ToString() ?? "Erreur inconnue OCR";
-                    throw new Exception("OCR.space error: " + errorMessage);
-                }
-
-                var extractedText = result?.ParsedResults?[0]?.ParsedText?.ToString();
-
-                if (string.IsNullOrWhiteSpace(extractedText))
-                {
-                    throw new Exception("Aucun texte extrait de l'image.");
-                }
-
-                // ✅ Prend uniquement la première ligne du texte
-                var lines = extractedText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                var firstLine = lines.Length > 0 ? lines[0] : string.Empty;
-
-                return firstLine;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error during OCR extraction: {ex.Message}");
-                throw new Exception($"Erreur lors de l'extraction du texte OCR : {ex.Message}", ex);
+                var status = statusElement.GetString();
+                if (status == "succeeded")
+                    break;
+                if (status == "failed")
+                    throw new Exception("Échec de l’analyse OCR.");
             }
         }
+
+        using var finalDoc = JsonDocument.Parse(resultJson);
+        if (!finalDoc.RootElement.TryGetProperty("analyzeResult", out var analyzeResult))
+            throw new Exception("Clé 'analyzeResult' introuvable dans la réponse Azure OCR.");
+
+        if (!analyzeResult.TryGetProperty("readResults", out var readResults) || readResults.GetArrayLength() == 0)
+            throw new Exception("Clé 'readResults' vide ou introuvable.");
+
+        var lines = readResults[0].GetProperty("lines");
+
+        string extractedText = "";
+        foreach (var line in lines.EnumerateArray())
+        {
+            if (line.TryGetProperty("text", out var textElement))
+            {
+                extractedText += textElement.GetString() + "\n";
+            }
+        }
+
+        // Extraire le numéro de CIN à partir du texte extrait
+        var numeroCin = ExtraireNumeroCin(extractedText);
+
+        return numeroCin ?? throw new Exception("Numéro CIN introuvable.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erreur OCR Azure : {ex.Message}");
+        throw new Exception($"Erreur lors de l'extraction du texte avec Azure OCR : {ex.Message}", ex);
     }
 }
+
+private string ExtraireNumeroCin(string texte)
+{
+    // Expression régulière pour capturer un numéro CIN (8 chiffres consécutifs)
+    var match = System.Text.RegularExpressions.Regex.Match(texte, @"\b\d{8}\b");
+    return match.Success ? match.Value : null;
+}
+    }}
