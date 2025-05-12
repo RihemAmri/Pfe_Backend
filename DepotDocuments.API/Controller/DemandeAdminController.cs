@@ -36,6 +36,23 @@ public async Task<IActionResult> GetAllDemandes()
         return StatusCode(500, $"Une erreur est survenue: {ex.Message}");
     }
 }
+[HttpPut("update-statut/{id}")]
+public async Task<IActionResult> UpdateStatutDemande(string id, [FromBody] string nouveauStatut)
+{
+    var update = Builders<DepotDemande>.Update.Set(d => d.Statut, nouveauStatut);
+    var result = await _demandeCollection.UpdateOneAsync(
+        d => d.Id == id,
+        update
+    );
+
+    if (result.MatchedCount == 0)
+    {
+        return NotFound($"Aucune demande trouvée avec l'ID : {id}");
+    }
+
+    return Ok($"Statut de la demande {id} mis à jour avec succès.");
+}
+
     [HttpGet("statut/{statut}")]
     public async Task<IActionResult> GetDemandesByStatut(string statut)
     {
@@ -45,6 +62,7 @@ public async Task<IActionResult> GetAllDemandes()
     [HttpGet("{id}")]
     public async Task<IActionResult> GetDemandeById(string id)
     {
+
         var demande = await _demandeCollection.Find(d => d.Id == id).FirstOrDefaultAsync();
         return demande != null ? Ok(demande) : NotFound();
     }
