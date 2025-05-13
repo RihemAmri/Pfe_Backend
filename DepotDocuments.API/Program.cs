@@ -21,6 +21,7 @@ builder.WebHost.UseUrls("http://*:4002");
 // Services
 builder.Services.AddControllers();
 builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
+builder.Services.AddSingleton<RabbitMQProducer>();
 
 // Choisis UNE SEULE implémentation de IOcrProcessor
 builder.Services.AddScoped<IOcrProcessor, CinOcrProcessor>();  // Tu peux ajouter plus d'implementations pour OCR selon tes besoins

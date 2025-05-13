@@ -16,6 +16,8 @@ builder.Services.Configure<CreditDatabaseSettings>(
     builder.Configuration.GetSection("DatabaseSettings"));
 builder.Services.AddScoped<ICreditService, CreditService>();
 builder.Services.AddHostedService<CreditHostedService>();
+builder.Services.AddHostedService<RabbitMQConsumer>();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
