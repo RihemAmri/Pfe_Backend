@@ -11,11 +11,14 @@ namespace Credit.API.Controllers
     {
         private readonly ICreditService _service;
         private readonly IHttpClientFactory _httpClientFactory;
+        
+       private readonly CloudinaryService _cloudinaryService;
 
-        public CreditController(ICreditService service,IHttpClientFactory httpClientFactory)
+        public CreditController(ICreditService service, IHttpClientFactory httpClientFactory,CloudinaryService cloudinaryService)
         {
             _service = service;
             _httpClientFactory = httpClientFactory;
+             _cloudinaryService = cloudinaryService; ;
         }
 
         [HttpPost]
@@ -141,6 +144,94 @@ public async Task<IActionResult> MettreAJourAmortissements()
     
     return Ok("Mise à jour effectuée avec succès.");
 }
+[HttpPost("demande-anticipation")]
+public async Task<IActionResult> DemandeAnticipation([FromBody] DemandeAnticipationDto demande)
+{
+    var result = await _service.AjouterDemandeAnticipationAsync(demande);
+
+    if (!result)
+        return BadRequest("Erreur lors de l'enregistrement de la demande.");
+
+    // Notification à l'admin
+    var client = _httpClientFactory.CreateClient("NotificationApi");
+    var notif = new CreateNotificationDto
+    {
+        DestinataireId = "6807f3958d2732dd1864cd9b", // ID Admin
+        Message = $"Nouvelle demande d'anticipation pour le crédit ID: {demande.IdCredit} par le client ID: {demande.NumeroCompte}.",
+        Date = DateTime.UtcNow,
+        Lu = false,
+        Type = "anticipation"
+    };
+
+    await client.PostAsJsonAsync("api/Notification", notif);
+
+    return Ok(new { message = "Demande d’anticipation envoyée avec succès." });
+}
+
+[HttpGet("anticipations/sans-reponse")]
+public async Task<IActionResult> GetAnticipationsSansReponse()
+{
+    var result = await _service.GetAnticipationsSansReponseAsync();
+    return Ok(result);
+}
+
+[HttpGet("anticipations/avec-reponse")]
+public async Task<IActionResult> GetAnticipationsAvecReponse()
+{
+    var result = await _service.GetAnticipationsAvecReponseAsync();
+    return Ok(result);
+}
+
+        [HttpPost("anticipations/repondre/{idAnticipation}")]
+        public async Task<IActionResult> RepondreAnticipation(string idAnticipation, [FromBody] ReponseAnticipationDto dto)
+        {
+            dto.IdDemande = idAnticipation;
+            var success = await _service.RepondreAnticipationAsync(dto);
+
+            if (!success)
+                return NotFound("Demande d'anticipation introuvable ou non mise à jour.");
+
+            // 🔔 Envoi de notification à l’utilisateur
+            var anticipation = (await _service.GetAnticipationsAvecReponseAsync())
+                .FirstOrDefault(a => a.IdDemande == idAnticipation);
+
+            if (anticipation != null)
+            {
+                var client = _httpClientFactory.CreateClient("NotificationApi");
+
+                var notif = new CreateNotificationDto
+                {
+                    DestinataireId = anticipation.IdClient,
+                    Message = $"Réponse à votre demande d’anticipation : {dto.ReponseAdmin}.",
+                    Date = DateTime.UtcNow,
+                    Lu = false,
+                    Type = "repanticipation"
+                };
+
+                await client.PostAsJsonAsync("api/Notification", notif);
+            }
+
+            return Ok(new { message = "Réponse enregistrée avec succès." });
+        }
+        [HttpGet("anticipations/client/{IdCredit}")]
+        public async Task<IActionResult> GetAnticipationsParClient(string IdCredit)
+        {
+            var result = await _service.GetDemandesAnticipationParClientAsync(IdCredit);
+            return Ok(result);
+        }
+       [HttpPost("upload-recupayement/{idDemande}")]
+public async Task<IActionResult> UploadRecupayement(string idDemande, [FromForm] UploadRecupayementDto dto)
+{
+    if (dto.Fichier == null || dto.Fichier.Length == 0)
+        return BadRequest("Fichier requis.");
+
+    var result = await _service.UploadRecupayementAsync(idDemande, dto.Fichier);
+    if (!result)
+        return NotFound("Demande introuvable ou erreur lors du téléversement.");
+
+    return Ok(new { message = "Fichier envoyé et enregistré avec succès." });
+}
+
 
 
     }

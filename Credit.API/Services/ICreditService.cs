@@ -1,5 +1,5 @@
 using Credit.API.DTOs;
-
+using Credit.API.Models;
 namespace Credit.API.Services
 {
     public interface ICreditService
@@ -14,7 +14,12 @@ namespace Credit.API.Services
        Task<bool> PayerIntegralementCreditAsync(string idCredit);
        Task <bool>CloturerCreditAsync(string idCredit);
        Task MettreAJourAmortissementsAsync();
-
+       Task<bool> AjouterDemandeAnticipationAsync(DemandeAnticipationDto dto);
+       Task<List<DemandeAnticipation>> GetAnticipationsSansReponseAsync();
+       Task<bool> RepondreAnticipationAsync(ReponseAnticipationDto reponse);
+       Task<List<DemandeAnticipation>> GetAnticipationsAvecReponseAsync();
+       Task<List<DemandeAnticipation>> GetDemandesAnticipationParClientAsync(string IdCredit);
+       Task<bool> UploadRecupayementAsync(string idDemande, IFormFile fichier);
 
     }
 }

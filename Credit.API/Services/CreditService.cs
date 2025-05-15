@@ -11,14 +11,19 @@ namespace Credit.API.Services
     public class CreditService : ICreditService
     {
         private readonly IMongoCollection<Credits> _credits;
+        private readonly IMongoCollection<DemandeAnticipation> _demandeAnticipationCollection;
 
-        public CreditService(IOptions<CreditDatabaseSettings> settings)
-         {
+        private readonly CloudinaryService _cloudinaryService;
+        public CreditService(IOptions<CreditDatabaseSettings> settings, CloudinaryService cloudinaryService)
+        {
             var config = settings.Value;
 
             var client = new MongoClient(config.ConnectionString);
             var database = client.GetDatabase(config.DatabaseName);
             _credits = database.GetCollection<Credits>(config.CreditCollectionName);
+            _demandeAnticipationCollection = database.GetCollection<DemandeAnticipation>("DemandeAnticipation");
+            _cloudinaryService = cloudinaryService;
+
         }
 
         public async Task<CreditResponseDto> AjouterCreditAsync(CreateCreditDto dto)
@@ -48,87 +53,87 @@ namespace Credit.API.Services
             return credits.Select(ToDto).ToList();
         }
 
-       public async Task MettreAJourAmortissementParIdAsync(string idCredit)
-{
-    var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
-    if (credit == null) return;
-
-    var maintenant = DateTime.Now;
-
-    foreach (var ligne in credit.TableauAmortissement)
-    {
-        if (!ligne.Paye && ligne.DateEcheance <= maintenant)
+        public async Task MettreAJourAmortissementParIdAsync(string idCredit)
         {
-            ligne.Paye = true;
-            ligne.CapitalRestant -= ligne.Mensualite - ligne.Interet;
+            var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
+            if (credit == null) return;
+
+            var maintenant = DateTime.Now;
+
+            foreach (var ligne in credit.TableauAmortissement)
+            {
+                if (!ligne.Paye && ligne.DateEcheance <= maintenant)
+                {
+                    ligne.Paye = true;
+                    ligne.CapitalRestant -= ligne.Mensualite - ligne.Interet;
+                }
+            }
+
+            await _credits.ReplaceOneAsync(c => c.Id == credit.Id, credit);
         }
-    }
-
-    await _credits.ReplaceOneAsync(c => c.Id == credit.Id, credit);
-}
-public async Task<List<CreditSansAmortissementDto>> GetAllCreditsSansAmortissementAsync()
-{
-    var credits = await _credits.Find(_ => true).ToListAsync();
-    return credits.Select(c => new CreditSansAmortissementDto
-    {
-        Id = c.Id,
-        IdClient = c.IdClient,
-        IdDemande = c.IdDemande,
-        Status = c.Status,
-
-        Montant = c.Montant,
-        DureeMois = c.DureeMois,
-        TauxInteret = c.TauxInteret,
-        InteretFixe = c.InteretFixe,
-        DateDebut = c.DateDebut,
-        TypeCredit = c.TypeCredit
-    }).ToList();
-}
-public async Task<bool> CloturerCreditAsync(string idCredit)
-{
-    var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
-    if (credit == null)
-        return false;
-
-    foreach (var ligne in credit.TableauAmortissement)
-    {
-        ligne.Paye = true;
-        ligne.CapitalRestant = 0;
-    }
-
-    credit.Status = "Cloture";
-
-    await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
-    return true;
-}
-
-    public async Task MettreAJourAmortissementsAsync()
-{
-    var tous = await _credits.Find(_ => true).ToListAsync();
-    var maintenant = DateTime.Now;
-
-    foreach (var credit in tous)
-    {
-        foreach (var ligne in credit.TableauAmortissement)
+        public async Task<List<CreditSansAmortissementDto>> GetAllCreditsSansAmortissementAsync()
         {
-            if (!ligne.Paye && ligne.DateEcheance <= maintenant)
+            var credits = await _credits.Find(_ => true).ToListAsync();
+            return credits.Select(c => new CreditSansAmortissementDto
+            {
+                Id = c.Id,
+                IdClient = c.IdClient,
+                IdDemande = c.IdDemande,
+                Status = c.Status,
+
+                Montant = c.Montant,
+                DureeMois = c.DureeMois,
+                TauxInteret = c.TauxInteret,
+                InteretFixe = c.InteretFixe,
+                DateDebut = c.DateDebut,
+                TypeCredit = c.TypeCredit
+            }).ToList();
+        }
+        public async Task<bool> CloturerCreditAsync(string idCredit)
+        {
+            var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
+            if (credit == null)
+                return false;
+
+            foreach (var ligne in credit.TableauAmortissement)
             {
                 ligne.Paye = true;
-                ligne.CapitalRestant -= ligne.Mensualite - ligne.Interet;
+                ligne.CapitalRestant = 0;
             }
+
+            credit.Status = "Cloture";
+
+            await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
+            return true;
         }
 
-        // Vérifier si toutes les lignes sont payées
-        credit.Status = credit.TableauAmortissement.All(a => a.Paye) ? "Cloture" : "EnCours";
+        public async Task MettreAJourAmortissementsAsync()
+        {
+            var tous = await _credits.Find(_ => true).ToListAsync();
+            var maintenant = DateTime.Now;
 
-        await _credits.ReplaceOneAsync(c => c.Id == credit.Id, credit);
-    }
-}
-  public async Task<List<CreditResponseDto>> GetCreditsParStatusAsync(string status)
-{
-    var credits = await _credits.Find(c => c.Status == status).ToListAsync();
-    return credits.Select(ToDto).ToList();
-}
+            foreach (var credit in tous)
+            {
+                foreach (var ligne in credit.TableauAmortissement)
+                {
+                    if (!ligne.Paye && ligne.DateEcheance <= maintenant)
+                    {
+                        ligne.Paye = true;
+                        ligne.CapitalRestant -= ligne.Mensualite - ligne.Interet;
+                    }
+                }
+
+                // Vérifier si toutes les lignes sont payées
+                credit.Status = credit.TableauAmortissement.All(a => a.Paye) ? "Cloture" : "EnCours";
+
+                await _credits.ReplaceOneAsync(c => c.Id == credit.Id, credit);
+            }
+        }
+        public async Task<List<CreditResponseDto>> GetCreditsParStatusAsync(string status)
+        {
+            var credits = await _credits.Find(c => c.Status == status).ToListAsync();
+            return credits.Select(ToDto).ToList();
+        }
 
 
         // Helpers
@@ -159,50 +164,65 @@ public async Task<bool> CloturerCreditAsync(string idCredit)
             return list;
         }
         public async Task<CreditResponseDto> GetCreditParIdAsync(string idCredit)
-{
-    var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
-    return credit != null ? ToDto(credit) : null;
-}
-public async Task<bool> PayerIntegralementCreditAsync(string idCredit)
-{
-    var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
-    if (credit == null)
-        return false;
-
-    foreach (var ligne in credit.TableauAmortissement)
-    {
-        if (!ligne.Paye)
         {
-            ligne.Paye = true;
-            ligne.CapitalRestant = 0;
+            var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
+            return credit != null ? ToDto(credit) : null;
         }
-    }
+        public async Task<bool> PayerIntegralementCreditAsync(string idCredit)
+        {
+            var credit = await _credits.Find(c => c.Id == idCredit).FirstOrDefaultAsync();
+            if (credit == null)
+                return false;
 
-   
+            foreach (var ligne in credit.TableauAmortissement)
+            {
+                if (!ligne.Paye)
+                {
+                    ligne.Paye = true;
+                    ligne.CapitalRestant = 0;
+                }
+            }
 
-    await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
-    return true;
-}
 
 
-          public async Task<List<CreditSansAmortissementDto>> GetCreditsParTypeSansAmortissementAsync(string typeCredit)
-{
-    var credits = await _credits.Find(c => c.TypeCredit == typeCredit).ToListAsync();
+            await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
+            return true;
+        }
+        public async Task<bool> AjouterDemandeAnticipationAsync(DemandeAnticipationDto dto)
+        {
+            var demande = new DemandeAnticipation
+            {
+                IdCredit = dto.IdCredit,
+                IdClient = dto.IdClient,
+                NumeroCompte = dto.NumeroCompte,
+                Raison = dto.Raison,
+                Statut = "En Attente",
+                DateDemande = DateTime.UtcNow
+            };
 
-    return credits.Select(c => new CreditSansAmortissementDto
-    {
-        Id = c.Id,
-        IdClient = c.IdClient,
-        IdDemande = c.IdDemande,
-        Montant = c.Montant,
-        DureeMois = c.DureeMois,
-        TauxInteret = c.TauxInteret,
-        InteretFixe = c.InteretFixe,
-        DateDebut = c.DateDebut,
-        TypeCredit = c.TypeCredit,
-        Status = c.Status
-    }).ToList();
-}
+            await _demandeAnticipationCollection.InsertOneAsync(demande);
+            return true;
+        }
+
+
+        public async Task<List<CreditSansAmortissementDto>> GetCreditsParTypeSansAmortissementAsync(string typeCredit)
+        {
+            var credits = await _credits.Find(c => c.TypeCredit == typeCredit).ToListAsync();
+
+            return credits.Select(c => new CreditSansAmortissementDto
+            {
+                Id = c.Id,
+                IdClient = c.IdClient,
+                IdDemande = c.IdDemande,
+                Montant = c.Montant,
+                DureeMois = c.DureeMois,
+                TauxInteret = c.TauxInteret,
+                InteretFixe = c.InteretFixe,
+                DateDebut = c.DateDebut,
+                TypeCredit = c.TypeCredit,
+                Status = c.Status
+            }).ToList();
+        }
 
         private CreditResponseDto ToDto(Credits credit) => new()
         {
@@ -227,5 +247,57 @@ public async Task<bool> PayerIntegralementCreditAsync(string idCredit)
                 DateEcheance = a.DateEcheance
             }).ToList()
         };
+        public async Task<List<DemandeAnticipation>> GetAnticipationsSansReponseAsync()
+{
+    return await _demandeAnticipationCollection
+        .Find(d => d.ReponseAdmin == null)
+        .ToListAsync();
+}
+
+public async Task<List<DemandeAnticipation>> GetAnticipationsAvecReponseAsync()
+{
+    return await _demandeAnticipationCollection
+        .Find(d => d.ReponseAdmin != null)
+        .ToListAsync();
+}
+
+        public async Task<bool> RepondreAnticipationAsync(ReponseAnticipationDto dto)
+        {
+            var filter = Builders<DemandeAnticipation>.Filter.Eq(a => a.IdDemande, dto.IdDemande);
+            var update = Builders<DemandeAnticipation>.Update
+                .Set(a => a.ReponseAdmin, dto.ReponseAdmin)
+                .Set(a => a.Commentaire, dto.Commentaire)
+                .Set(a => a.DateReponse, dto.DateReponse)
+                .Set(a => a.Statut, "Répondu");
+
+            var result = await _demandeAnticipationCollection.UpdateOneAsync(filter, update);
+            return result.ModifiedCount > 0;
+        }
+        public async Task<List<DemandeAnticipation>> GetDemandesAnticipationParClientAsync(string IdCredit)
+        {
+            var demandes = await _demandeAnticipationCollection
+                .Find(d => d.IdCredit == IdCredit)
+                .ToListAsync();
+
+            return demandes;
+        }
+public async Task<bool> UploadRecupayementAsync(string idDemande, IFormFile fichier)
+{
+    if (fichier == null || fichier.Length == 0) return false;
+
+    var demande = await _demandeAnticipationCollection.Find(d => d.IdDemande == idDemande).FirstOrDefaultAsync();
+    if (demande == null) return false;
+
+    var url = await _cloudinaryService.UploadFileAsync(fichier);
+
+    var update = Builders<DemandeAnticipation>.Update
+        .Set(d => d.AttestationPaiementUrl, url);
+
+    var result = await _demandeAnticipationCollection.UpdateOneAsync(d => d.IdDemande == idDemande, update);
+
+    return result.ModifiedCount > 0;
+}
+
+
     }
 }
