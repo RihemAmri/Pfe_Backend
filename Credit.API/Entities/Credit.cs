@@ -16,7 +16,7 @@ public class Credits
     public float TauxInteret { get; set; }
     public bool InteretFixe { get; set; }
     public string TypeCredit { get; set; }
-    public string Status { get; set; } = "EnCours"; // Par défaut
+    public string Status { get; set; } = "EnCours"; 
 
     public DateTime DateDebut { get; set; } = DateTime.Now;
 

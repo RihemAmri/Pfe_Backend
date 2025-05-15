@@ -12,7 +12,6 @@ RUN dotnet restore "Credit.API.csproj"
 
 # Copier le reste des fichiers du projet dans le conteneur
 COPY . .
-
 # Publier le projet en mode Release
 RUN dotnet publish "Credit.API.csproj" -c Release -o /app/publish
 
