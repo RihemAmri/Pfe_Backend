@@ -43,7 +43,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("AllowAngular");
 app.UseAuthorization();
 app.MapControllers();
 

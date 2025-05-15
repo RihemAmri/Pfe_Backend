@@ -32,8 +32,34 @@ namespace Validation.API.Services
             };
             mailMessage.To.Add(toEmail);
             mailMessage.Attachments.Add(new Attachment(new System.IO.MemoryStream(pdfContent), "Notification_Accord.pdf", "application/pdf"));
-
+            Console.WriteLine($"Envoi de l'email à {toEmail}...");
             await smtpClient.SendMailAsync(mailMessage);
+            Console.WriteLine("Email envoyé.");
         }
+
+        public async Task EnvoyerOtpParMail(string destinataire, string otp)
+        {
+            var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
+            {
+                Port = int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                Credentials = new NetworkCredential(_configuration["EmailSettings:Username"], _configuration["EmailSettings:Password"]),
+                EnableSsl = true
+            };
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"]),
+                Subject = "Votre code OTP",
+                Body = $"Bonjour,\n\nVoici votre code OTP : {otp}\nCe code est valide pendant 5 minutes.\n\nCordialement,\nService Validation",
+                IsBodyHtml = false // Mettre true si tu veux un format HTML
+            };
+
+            mailMessage.To.Add(destinataire);
+
+            Console.WriteLine($"Envoi OTP à {destinataire}...");
+            await smtpClient.SendMailAsync(mailMessage);
+            Console.WriteLine("OTP envoyé.");
+        }
+
     }
 }

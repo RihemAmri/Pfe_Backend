@@ -12,12 +12,14 @@ namespace Validation.API.Services
             _converter = converter;
         }
 
-        public byte[] GenerateNotificationPdf(NotificationData data)
+        public byte[] GenerateNotificationPdf(NotificationData data, byte[] signatureAdminBytes = null)
         {
             string logoBase64 = GetImageAsBase64(data.LogoPath);
             string signature1Base64 = GetImageAsBase64(data.Signature1Path);
-            string signature2Base64 = GetImageAsBase64(data.Signature2Path);
-
+            //string signature2Base64 = GetImageAsBase64(data.Signature2Path);
+            string signature2Base64 = signatureAdminBytes != null
+                ? Convert.ToBase64String(signatureAdminBytes)
+                : GetImageAsBase64(data.Signature2Path);
             var html = $@"
             <html>
             <head>

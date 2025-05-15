@@ -57,7 +57,8 @@ public byte[] GenerateDemandePdfWithSignature(DepotDemandeDto demande, byte[] si
     File.WriteAllBytes(imagePath, signatureImage);
 
     string imageSrc = $"file:///{imagePath.Replace("\\", "/")}";
-
+     string logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "Logo_STB.png");
+     string logoSrc = $"file:///{logoPath.Replace("\\", "/")}";
     var htmlContent = $@"
 <html>
 <head>
@@ -72,6 +73,13 @@ public byte[] GenerateDemandePdfWithSignature(DepotDemandeDto demande, byte[] si
             text-align: center;
             color: #0056b3;
             margin-bottom: 50px;
+        }}
+        .logo {{
+            text-align: left;
+            margin-bottom: 20px;
+        }}
+        .logo img {{
+            max-width: 150px;
         }}
         .section {{
             margin-bottom: 40px;
@@ -105,6 +113,9 @@ public byte[] GenerateDemandePdfWithSignature(DepotDemandeDto demande, byte[] si
     </style>
 </head>
 <body>
+    <div class='logo'>
+        <img src='{logoSrc}' alt='Logo STB' />
+    </div>
     <h1>Demande de Crédit</h1>
 
     <div class='section'>

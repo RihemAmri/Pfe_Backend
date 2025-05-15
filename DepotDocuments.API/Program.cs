@@ -11,11 +11,16 @@ using DinkToPdf;
 using DinkToPdf.Contracts;
 using System.Runtime.InteropServices;
 
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    WebRootPath = "wwwroot",
+    Args = args
+});
 var context = new CustomAssemblyLoadContext();
 var wkhtmlPath = Path.Combine(AppContext.BaseDirectory, "DinkToPdfLib", "linux64", "libwkhtmltox.so");
 context.LoadUnmanagedLibrary(wkhtmlPath);
 
-var builder = WebApplication.CreateBuilder(args);
+//var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://*:4002");
 
 // Services
