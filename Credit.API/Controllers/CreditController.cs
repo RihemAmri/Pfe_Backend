@@ -69,7 +69,7 @@ public async Task<IActionResult> CloturerCredit(string id)
         var client = _httpClientFactory.CreateClient("NotificationApi");
         var notif = new CreateNotificationDto
         {
-            DestinataireId = credit.IdClient, // Assure-toi que `IdClient` est bien accessible
+            DestinataireId = credit.IdClient, 
             Message = $"Votre crédit \"{credit.TypeCredit}\" est clôturé. Merci pour votre fidélité.",
             Date = DateTime.UtcNow,
             Lu = false,
@@ -157,7 +157,7 @@ public async Task<IActionResult> DemandeAnticipation([FromBody] DemandeAnticipat
     var notif = new CreateNotificationDto
     {
         DestinataireId = "6807f3958d2732dd1864cd9b", // ID Admin
-        Message = $"Nouvelle demande d'anticipation pour le crédit ID: {demande.IdCredit} par le client ID: {demande.NumeroCompte}.",
+        Message = $"Nouvelle demande d'anticipation pour le crédit N°: {demande.IdCredit} par le client: {demande.NumeroCompte}.",
         Date = DateTime.UtcNow,
         Lu = false,
         Type = "anticipation"
@@ -226,8 +226,28 @@ public async Task<IActionResult> UploadRecupayement(string idDemande, [FromForm]
         return BadRequest("Fichier requis.");
 
     var result = await _service.UploadRecupayementAsync(idDemande, dto.Fichier);
+    var anticipation = (await _service.GetAnticipationsAvecReponseAsync())
+                .FirstOrDefault(a => a.IdDemande == idDemande);
+
+            if (anticipation != null)
+            {
+                var client = _httpClientFactory.CreateClient("NotificationApi");
+
+                var notif = new CreateNotificationDto
+                {
+                    DestinataireId = "6807f3958d2732dd1864cd9b",
+                    Message = $" Un client a soumis une attestation de paiement pour une demande de remboursement anticipé de crédit",
+                    Date = DateTime.UtcNow,
+                    Lu = false,
+                    Type = "anticipation"
+                };
+
+                await client.PostAsJsonAsync("api/Notification", notif);
+            }
+
+    
     if (!result)
-        return NotFound("Demande introuvable ou erreur lors du téléversement.");
+                return NotFound("Demande introuvable ou erreur lors du téléversement.");
 
     return Ok(new { message = "Fichier envoyé et enregistré avec succès." });
 }
