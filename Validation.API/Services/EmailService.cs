@@ -60,6 +60,42 @@ namespace Validation.API.Services
             await smtpClient.SendMailAsync(mailMessage);
             Console.WriteLine("OTP envoyé.");
         }
+        public async Task SendRefusEmailAsync(string toEmail, string nomClient, string motif)
+        {
+            var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
+            {
+                Port = int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                Credentials = new NetworkCredential(_configuration["EmailSettings:Username"], _configuration["EmailSettings:Password"]),
+                EnableSsl = true
+            };
+
+            var subject = "Refus de votre demande de crédit";
+            var body = $@"
+                Bonjour {nomClient},
+
+                Nous vous informons que votre demande de crédit a été refusée.
+
+                Motif : {motif}
+
+                Pour plus d'informations, veuillez contacter notre agence.
+
+                Cordialement,
+                L'équipe STB";
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"]),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = false
+            };
+
+            mailMessage.To.Add(toEmail);
+
+            Console.WriteLine($"Envoi de l'e-mail de refus à {toEmail}...");
+            await smtpClient.SendMailAsync(mailMessage);
+            Console.WriteLine("E-mail de refus envoyé.");
+        }
 
     }
 }

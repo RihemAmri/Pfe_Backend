@@ -70,7 +70,16 @@ namespace Validation.API.Services
         // ✅ Envoyer l'e-mail
         await _emailService.SendValidationEmailAsync(demande.Email, pdfContent);
     }
+    else if (isUpdated && simplifiedStatus == "refusée")
+        {
+            var demande = await _repo.GetDemandeByIdAsync(id);
+            if (demande != null)
+            {
+                var motif = string.IsNullOrWhiteSpace(dto.MotifRefus) ? "Aucun motif précisé." : dto.MotifRefus;
 
+                await _emailService.SendRefusEmailAsync(demande.Email, demande.Nom, motif);
+            }
+        }
     return isUpdated;
 }
 
