@@ -25,9 +25,14 @@ namespace Validation.API.Services
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(_configuration["EmailSettings:FromAddress"]),
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
                 Subject = "Félicitations - Accord de principe",
-                Body = "Félicitations, votre demande a été validée. Vous trouverez ci-joint la notification d'accord de principe.",
+                Body = @"
+                <p>Félicitations,</p>
+                <p>Votre demande de crédit a été <strong>validée</strong>. Vous trouverez ci-joint votre notification d'accord de principe.</p>
+                <p style='color:#0056b3;'><strong>Important :</strong> Pour finaliser votre demande, veuillez vous rendre à votre agence afin de compléter les démarches (souscription à une assurance vie, signature du contrat, etc.).</p>
+                <p>Cordialement,</p>
+                <p><em>L’équipe STB</em></p>",
                 IsBodyHtml = true
             };
             mailMessage.To.Add(toEmail);
@@ -46,12 +51,24 @@ namespace Validation.API.Services
                 EnableSsl = true
             };
 
+           var body = $@"
+            <html>
+            <body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                <p>Cher administrateur,</p>
+                <p>Voici votre code OTP :</p>
+                <p style='font-size: 24px; color: green; font-weight: bold; margin-left: 20px;'>{otp}</p>
+                <p>Ce code est valide pendant 5 minutes.</p>
+                <p>Veuillez utiliser ce code pour finaliser l’opération en cours. Ne partagez ce code avec personne.</p>
+                <p>Cordialement,<br/>Service Validation</p>
+            </body>
+            </html>";
+
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(_configuration["EmailSettings:FromAddress"]),
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
                 Subject = "Votre code OTP",
-                Body = $"Bonjour,\n\nVoici votre code OTP : {otp}\nCe code est valide pendant 5 minutes.\n\nCordialement,\nService Validation",
-                IsBodyHtml = false // Mettre true si tu veux un format HTML
+                Body = body,
+                IsBodyHtml = true // HTML activé pour le formatage
             };
 
             mailMessage.To.Add(destinataire);
@@ -60,6 +77,8 @@ namespace Validation.API.Services
             await smtpClient.SendMailAsync(mailMessage);
             Console.WriteLine("OTP envoyé.");
         }
+
+
         public async Task SendRefusEmailAsync(string toEmail, string nomClient, string motif)
         {
             var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
@@ -71,20 +90,22 @@ namespace Validation.API.Services
 
             var subject = "Refus de votre demande de crédit";
             var body = $@"
-                Bonjour {nomClient},
+Bonjour {nomClient},
 
-                Nous vous informons que votre demande de crédit a été refusée.
+Nous regrettons de vous informer que votre demande de crédit a été refusée.
 
-                Motif : {motif}
+Motif : {motif}
 
-                Pour plus d'informations, veuillez contacter notre agence.
+Nous comprenons que cette décision peut être décevante. Pour toute précision ou pour envisager d'autres solutions, n'hésitez pas à contacter votre agence STB.
 
-                Cordialement,
-                L'équipe STB";
+Nous vous remercions de votre intérêt et restons à votre disposition.
+
+Cordialement,  
+L’équipe STB";
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(_configuration["EmailSettings:FromAddress"]),
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = false
@@ -96,6 +117,74 @@ namespace Validation.API.Services
             await smtpClient.SendMailAsync(mailMessage);
             Console.WriteLine("E-mail de refus envoyé.");
         }
+        public async Task SendContratEmailAsync(string toEmail, string nomClient, string observation = null)
+        {
+            var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
+            {
+                Port = int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                Credentials = new NetworkCredential(_configuration["EmailSettings:Username"], _configuration["EmailSettings:Password"]),
+                EnableSsl = true
+            };
+
+            var subject = "Contrat signé avec STB";
+            var body = $@"
+Bonjour {nomClient},
+
+Nous vous informons que votre contrat a été signé avec succès.
+
+{(string.IsNullOrWhiteSpace(observation) ? "" : $"Observation : {observation}\n")}
+
+Merci pour votre confiance.
+
+Cordialement,
+L'équipe STB";
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = false
+            };
+
+            mailMessage.To.Add(toEmail);
+            await smtpClient.SendMailAsync(mailMessage);
+        }
+
+        public async Task SendCreditActifEmailAsync(string toEmail, string nomClient, string observation = null)
+        {
+            var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
+            {
+                Port = int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                Credentials = new NetworkCredential(_configuration["EmailSettings:Username"], _configuration["EmailSettings:Password"]),
+                EnableSsl = true
+            };
+
+            var subject = "Activation de votre crédit";
+            var body = $@"
+Bonjour {nomClient},
+
+Votre crédit est désormais actif.
+
+{(string.IsNullOrWhiteSpace(observation) ? "" : $"Observation : {observation}\n")}
+
+N'hésitez pas à nous contacter pour toute question.
+
+Cordialement,
+L'équipe STB";
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = false
+            };
+
+            mailMessage.To.Add(toEmail);
+            await smtpClient.SendMailAsync(mailMessage);
+        }
+
 
     }
 }

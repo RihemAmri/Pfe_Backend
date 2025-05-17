@@ -77,9 +77,25 @@ namespace Validation.API.Services
             {
                 var motif = string.IsNullOrWhiteSpace(dto.MotifRefus) ? "Aucun motif précisé." : dto.MotifRefus;
 
-                await _emailService.SendRefusEmailAsync(demande.Email, demande.Nom, motif);
+                await _emailService.SendRefusEmailAsync(demande.Email,$"{demande.Prenom} {demande.Nom}" , motif);
             }
         }
+        else if (isUpdated && simplifiedStatus == "contrat_signé")
+{
+    var demande = await _repo.GetDemandeByIdAsync(id);
+    if (demande != null)
+    {
+        await _emailService.SendContratEmailAsync(demande.Email,$"{demande.Prenom} {demande.Nom}", dto.MotifRefus);
+    }
+}
+else if (isUpdated && simplifiedStatus == "crédit_actif")
+{
+    var demande = await _repo.GetDemandeByIdAsync(id);
+    if (demande != null)
+    {
+        await _emailService.SendCreditActifEmailAsync(demande.Email,$"{demande.Prenom} {demande.Nom}", dto.MotifRefus);
+    }
+}
     return isUpdated;
 }
 
@@ -94,6 +110,10 @@ namespace Validation.API.Services
                 return "refusée";
             if (status.Contains("valide") || status.Contains("accepté"))
                 return "validée";
+            if (status.Contains("contrat"))
+                return "contrat_signé";
+            if (status.Contains("actif"))
+                return "crédit_actif";
 
             return "soumise";
         }

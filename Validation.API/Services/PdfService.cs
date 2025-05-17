@@ -20,82 +20,110 @@ namespace Validation.API.Services
             string signature2Base64 = signatureAdminBytes != null
                 ? Convert.ToBase64String(signatureAdminBytes)
                 : GetImageAsBase64(data.Signature2Path);
-            var html = $@"
-            <html>
-            <head>
-                <meta charset='UTF-8'>
-                <style>
-    body {{ font-family: Arial, sans-serif; font-size: 12pt; }}
-    h1 {{ text-align: center; font-size: 16pt; font-weight: bold; }}
-    .section {{ margin-bottom: 10px; }}
-    .details-table {{ width: 100%; margin-top: 10px; }}
-    .details-table td {{ padding: 5px; vertical-align: top; }}
-    .signature-wrapper {{
-        margin-top: 40px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end; /* 💥 Ajouté pour aligner le bas */
-    }}
-    .signature-block {{
-        width: 45%;
-        text-align: center;
-    }}
-    .signature-block img {{
-        height: 60px;
-        margin-top: 10px;
-        object-fit: contain; /* 💥 Ajouté pour que toutes les images gardent leurs proportions sans casser */
-    }}
-    .footer {{ text-align: right; font-size: 10pt; margin-top: 20px; }}
-</style>
+           var html = $@"
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+        }}
+        h1 {{
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }}
+        .section {{
+            margin-bottom: 35px;
+        }}
+        .details-table {{
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }}
+        .details-table .label {{
+            width: 180px;
+            vertical-align: top;
+            padding-bottom: 8px;
+            padding-left: 40px;
+        }}
+        .details-table td {{
+            padding-bottom: 8px;
+        }}
+        .signature-final {{
+            margin-top: 60px;
+            text-align: right;
+            font-size: 11pt;
+        }}
+        .signature-final img {{
+            height: 70px;
+            margin-top: 5px;
+            object-fit: contain;
+        }}
+    </style>
+</head>
+<body>
+    <img src='data:image/png;base64,{logoBase64}' style='height:50px;' />
+    <h1>NOTIFICATION D'ACCORD DE PRINCIPE</h1>
 
-            </head>
-            <body>
-                <img src='data:image/png;base64,{logoBase64}' style='height:50px;' />
-                <h1>NOTIFICATION D'ACCORD DE PRINCIPE</h1>
+    <!-- Section 1 : Objet -->
+    <div class='section'>
+        <strong>Objet :</strong> Accord de principe pour l'octroi d'un {data.TypeCredit}.
+    </div>
 
-                <div class='section'>
-                    <strong>Objet :</strong> Accord de principe pour l'octroi d'un {data.TypeCredit}.<br/>
-                   
-                </div>
+    <!-- Section 2 : Infos personnelles -->
+    <div class='section'>
+        <table class='details-table'>
+            <tr>
+                <td class='label'><strong>Nom & Prénom :</strong></td>
+                <td>{data.NomPrenom}</td>
+            </tr>
+            <tr>
+                <td class='label'><strong>Compte N° :</strong></td>
+                <td>{data.NumeroCompte}</td>
+            </tr>
+        </table>
+    </div>
 
-                <table class='details-table'>
-                    <tr><td><strong>Nom & Prénom :</strong></td><td>{data.NomPrenom}</td></tr>
-                    <tr><td><strong>Compte N° :</strong></td><td>{data.NumeroCompte}</td></tr>
-                </table>
+    <!-- Section 3 : Suite à votre demande + conditions principales -->
+    <div class='section'>
+        Faisant suite à votre demande citée en objet, nous avons le plaisir de vous informer que nous avons donné suite favorable à votre demande et ce, dans les conditions suivantes :
+    </div>
+    <div class='section'>
+        <table class='details-table'>
+            <tr>
+                <td class='label'><strong>Montant Accordé :</strong></td>
+                <td>{data.MontantAccorde}</td>
+            </tr>
+            <tr>
+                <td class='label'><strong>Durée :</strong></td>
+                <td>{data.Duree}</td>
+            </tr>
+        </table>
+    </div>
 
-                <div class='section'>
-                    <strong>Montant Accordé :</strong> {data.MontantAccorde}<br/>
-                    <strong>Durée :</strong> {data.Duree}
-                </div>
+    <!-- Section 4 : Conditions -->
+    <div class='section'>
+        Il demeure entendu que l'accord définitif est subordonné à l'accomplissement de la (ou des) formalité(s) suivante(s) :
+        <ul><li>{data.Conditions}</li></ul>
+    </div>
 
-                <div class='section'>
-                    Il demeure entendu que l'accord définitif est subordonné à l'accomplissement des formalités suivantes :
-                    <ul><li>{data.Conditions}</li></ul>
-                    Condition particulière : {data.ConditionParticuliere}
-                </div>
+    <!-- Section 5 : Validité -->
+    <div class='section'>
+        Le présent accord de principe est valable six (06) mois à compter de sa notification.
+    </div>
 
-                <div class='section'>
-                    Le présent accord de principe est valable six (06) mois à compter de sa notification.
-                </div>
+    <!-- Signature -->
+    <div class='signature-final'>
+        Fait à Tunis, le {data.DateNotification:dd/MM/yyyy}<br/><br/>
+        Signature<br/>
+        <img src='data:image/png;base64,{signature2Base64}' alt='Signature'/>
+    </div>
+</body>
+</html>";
 
-                <div class='section'>
-                    Fait à Tunis, le {data.DateNotification:dd/MM/yyyy}
-                </div>
-
-                <div class='signature-wrapper'>
-                    <div class='signature-block left'>
-                        <div>Direction Bien-Être Social</div>
-                        <img src='data:image/png;base64,{signature1Base64}' alt='Signature 1'/>
-                    </div>
-                    <div class='signature-block right'>
-                        <div>Direction Centrale Capital Humain</div>
-                        <img src='data:image/png;base64,{signature2Base64}' alt='Signature 2'/>
-                    </div>
-                </div>
-
-                <div class='footer'>1/2</div>
-            </body>
-            </html>";
 
             var doc = new HtmlToPdfDocument()
             {
