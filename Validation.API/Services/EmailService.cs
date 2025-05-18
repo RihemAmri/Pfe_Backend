@@ -14,7 +14,7 @@ namespace Validation.API.Services
             _configuration = configuration;
         }
 
-        public async Task SendValidationEmailAsync(string toEmail, byte[] pdfContent)
+        public async Task SendValidationEmailAsync(string toEmail, byte[] pdfContent, string observation = null)
         {
             var smtpClient = new SmtpClient(_configuration["EmailSettings:SmtpHost"])
             {
@@ -22,17 +22,18 @@ namespace Validation.API.Services
                 Credentials = new NetworkCredential(_configuration["EmailSettings:Username"], _configuration["EmailSettings:Password"]),
                 EnableSsl = true
             };
-
+            var body = $@"
+            <p>Félicitations,</p>
+            <p>Votre demande de crédit a été <strong>validée</strong>. Vous trouverez ci-joint votre notification d'accord de principe.</p>
+            <p style='color:#0056b3;'><strong>Important :</strong> Pour finaliser votre demande, veuillez vous rendre à votre agence afin de compléter les démarches (souscription à une assurance vie, signature du contrat, etc.).</p>"
+            + (string.IsNullOrWhiteSpace(observation) ? "" : $@"<p><strong>Observation :</strong> {observation}</p>") + @"
+            <p>Cordialement,</p>
+            <p><em>L’équipe STB</em></p>";
             var mailMessage = new MailMessage
             {
                 From = new MailAddress(_configuration["EmailSettings:FromAddress"], "STB Bank"),
                 Subject = "Félicitations - Accord de principe",
-                Body = @"
-                <p>Félicitations,</p>
-                <p>Votre demande de crédit a été <strong>validée</strong>. Vous trouverez ci-joint votre notification d'accord de principe.</p>
-                <p style='color:#0056b3;'><strong>Important :</strong> Pour finaliser votre demande, veuillez vous rendre à votre agence afin de compléter les démarches (souscription à une assurance vie, signature du contrat, etc.).</p>
-                <p>Cordialement,</p>
-                <p><em>L’équipe STB</em></p>",
+                Body = body,
                 IsBodyHtml = true
             };
             mailMessage.To.Add(toEmail);

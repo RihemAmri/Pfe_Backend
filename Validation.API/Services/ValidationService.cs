@@ -68,7 +68,7 @@ namespace Validation.API.Services
         var pdfContent = _pdfService.GenerateNotificationPdf(notificationData, signatureAdminBytes);
         Console.WriteLine($"Email cible : {demande.Email}");
         // ✅ Envoyer l'e-mail
-        await _emailService.SendValidationEmailAsync(demande.Email, pdfContent);
+        await _emailService.SendValidationEmailAsync(demande.Email, pdfContent, dto.MotifRefus);
     }
     else if (isUpdated && simplifiedStatus == "refusée")
         {
