@@ -6,6 +6,7 @@ namespace Credit.API.DTOs
          public string IdDemande { get; set; }
         public decimal Montant { get; set; }
         public int DureeMois { get; set; }
+        public string Emailclient { get; set; }
         
 
         public DateTime DateDebut { get; set; } = DateTime.Now;
@@ -38,6 +39,8 @@ namespace Credit.API.DTOs
 
         public string TypeCredit { get; set; }  // Nouveau champ Type de crédit
         public List<AmortissementDto> TableauAmortissement { get; set; }
+        public string Emailclient { get; set; }
+        
     }
     public class CreditSansAmortissementDto
     {
@@ -52,5 +55,7 @@ namespace Credit.API.DTOs
         public string Status { get; set; }
 
         public string TypeCredit { get; set; }
+        public string Emailclient { get; set; }
+        
     }
 }

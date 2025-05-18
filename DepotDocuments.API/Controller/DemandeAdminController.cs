@@ -52,6 +52,7 @@ public async Task<IActionResult> UpdateStatutDemande(string id, [FromBody] strin
 
     // Si statut devient "crédit actif", envoyer via RabbitMQ
     if (nouveauStatut == "crédit actif" && demande != null)
+    
     {
         var message = new CreditMessageDto
         {
@@ -59,7 +60,8 @@ public async Task<IActionResult> UpdateStatutDemande(string id, [FromBody] strin
             IdClient = demande.UserId,
             Montant = demande.MontantDemande,
             DureeMois = demande.DureeEnAnnees * 12,
-            TypeCredit = demande.TypeCredit
+            TypeCredit = demande.TypeCredit,
+            Emailclient= demande.Email
         };
 
         producer.SendMessage(message);

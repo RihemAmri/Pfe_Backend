@@ -12,9 +12,9 @@ namespace Credit.API.Services
     {
         private readonly IMongoCollection<Credits> _credits;
         private readonly IMongoCollection<DemandeAnticipation> _demandeAnticipationCollection;
-
+        private readonly PdfService _pdfService;
         private readonly CloudinaryService _cloudinaryService;
-        public CreditService(IOptions<CreditDatabaseSettings> settings, CloudinaryService cloudinaryService)
+        public CreditService(IOptions<CreditDatabaseSettings> settings, CloudinaryService cloudinaryService, PdfService pdfService)
         {
             var config = settings.Value;
 
@@ -23,6 +23,7 @@ namespace Credit.API.Services
             _credits = database.GetCollection<Credits>(config.CreditCollectionName);
             _demandeAnticipationCollection = database.GetCollection<DemandeAnticipation>("DemandeAnticipation");
             _cloudinaryService = cloudinaryService;
+            _pdfService = pdfService;
 
         }
 
@@ -33,6 +34,7 @@ namespace Credit.API.Services
                 IdClient = dto.IdClient,
                 IdDemande = dto.IdDemande,
                 Montant = dto.Montant,
+                Emailclient= dto.Emailclient,
                 DureeMois = dto.DureeMois,
                 DateDebut = dto.DateDebut,
                 TypeCredit = dto.TypeCredit,  // Récupération du Type de crédit
@@ -80,7 +82,7 @@ namespace Credit.API.Services
                 IdClient = c.IdClient,
                 IdDemande = c.IdDemande,
                 Status = c.Status,
-
+                Emailclient = c.Emailclient,
                 Montant = c.Montant,
                 DureeMois = c.DureeMois,
                 TauxInteret = c.TauxInteret,
@@ -102,8 +104,13 @@ namespace Credit.API.Services
             }
 
             credit.Status = "Cloture";
+    
 
-            await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
+
+
+    await _credits.ReplaceOneAsync(c => c.Id == idCredit, credit);
+
+
             return true;
         }
 
@@ -236,7 +243,8 @@ namespace Credit.API.Services
             TauxInteret = credit.TauxInteret,
             InteretFixe = credit.InteretFixe,
             DateDebut = credit.DateDebut,
-            TypeCredit = credit.TypeCredit,  // Ajout du Type de crédit dans la réponse
+            TypeCredit = credit.TypeCredit, 
+            Emailclient = credit.Emailclient,
             TableauAmortissement = credit.TableauAmortissement.Select(a => new AmortissementDto
             {
                 Mois = a.Mois,
@@ -248,18 +256,18 @@ namespace Credit.API.Services
             }).ToList()
         };
         public async Task<List<DemandeAnticipation>> GetAnticipationsSansReponseAsync()
-{
-    return await _demandeAnticipationCollection
-        .Find(d => d.ReponseAdmin == null)
-        .ToListAsync();
-}
+        {
+            return await _demandeAnticipationCollection
+                .Find(d => d.ReponseAdmin == null)
+                .ToListAsync();
+        }
 
-public async Task<List<DemandeAnticipation>> GetAnticipationsAvecReponseAsync()
-{
-    return await _demandeAnticipationCollection
-        .Find(d => d.ReponseAdmin != null)
-        .ToListAsync();
-}
+        public async Task<List<DemandeAnticipation>> GetAnticipationsAvecReponseAsync()
+        {
+            return await _demandeAnticipationCollection
+                .Find(d => d.ReponseAdmin != null)
+                .ToListAsync();
+        }
 
         public async Task<bool> RepondreAnticipationAsync(ReponseAnticipationDto dto)
         {
@@ -281,22 +289,22 @@ public async Task<List<DemandeAnticipation>> GetAnticipationsAvecReponseAsync()
 
             return demandes;
         }
-public async Task<bool> UploadRecupayementAsync(string idDemande, IFormFile fichier)
-{
-    if (fichier == null || fichier.Length == 0) return false;
+        public async Task<bool> UploadRecupayementAsync(string idDemande, IFormFile fichier)
+        {
+            if (fichier == null || fichier.Length == 0) return false;
 
-    var demande = await _demandeAnticipationCollection.Find(d => d.IdDemande == idDemande).FirstOrDefaultAsync();
-    if (demande == null) return false;
+            var demande = await _demandeAnticipationCollection.Find(d => d.IdDemande == idDemande).FirstOrDefaultAsync();
+            if (demande == null) return false;
 
-    var url = await _cloudinaryService.UploadFileAsync(fichier);
+            var url = await _cloudinaryService.UploadFileAsync(fichier);
 
-    var update = Builders<DemandeAnticipation>.Update
-        .Set(d => d.AttestationPaiementUrl, url);
+            var update = Builders<DemandeAnticipation>.Update
+                .Set(d => d.AttestationPaiementUrl, url);
 
-    var result = await _demandeAnticipationCollection.UpdateOneAsync(d => d.IdDemande == idDemande, update);
+            var result = await _demandeAnticipationCollection.UpdateOneAsync(d => d.IdDemande == idDemande, update);
 
-    return result.ModifiedCount > 0;
-}
+            return result.ModifiedCount > 0;
+        }
 
 
     }

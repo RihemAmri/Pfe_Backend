@@ -12,6 +12,8 @@
     <PackageReference Include="MongoDB.Driver" Version="3.2.1" />
     <PackageReference Include="RabbitMQ.Client" Version="6.2.1" />
     <PackageReference Include="CloudinaryDotNet" Version="1.26.0" />
+    <PackageReference Include="DinkToPdf" Version="1.0.8" />
+    <PackageReference Include="DocuSign.eSign.dll" Version="8.1.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.1" />
   </ItemGroup>
