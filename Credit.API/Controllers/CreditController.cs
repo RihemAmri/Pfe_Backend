@@ -134,10 +134,18 @@ namespace Credit.API.Controllers
             var cloturesRecents = nouveauxCredits
                 .Where(nouveau => anciensCredits.Any(ancien => ancien.Id == nouveau.Id))
                 .ToList();
+               
+
+                
 
             var client = _httpClientFactory.CreateClient("NotificationApi");
             foreach (var credit in cloturesRecents)
+
             {
+                 byte[] pdfBytes = await _pdfService.GenerateMainleveePdfAsync(credit);
+                Console.WriteLine($"PDF généré pour le crédit {credit.Id}.");
+                await _mailService.SendMainleveeEmailAsync(credit.IdClient, pdfBytes,credit.Emailclient);
+                
                 var notif = new CreateNotificationDto
                 {
                     DestinataireId = credit.IdClient,

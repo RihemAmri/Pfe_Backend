@@ -22,7 +22,7 @@ namespace Credit.API.Services
 
             var rootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
             _signaturePath = $"file://{Path.Combine(rootPath, "signature.png").Replace("\\", "/")}";
-            _logoPath = $"file://{Path.Combine(rootPath, "logo_STB.png").Replace("\\", "/")}";
+            _logoPath = $"file://{Path.Combine(rootPath, "Logo_STB.png").Replace("\\", "/")}";
         }
 
         public async Task<byte[]> GenerateMainleveePdfAsync(CreditResponseDto credit)
@@ -118,7 +118,7 @@ namespace Credit.API.Services
     </div>
 
     <div class='footer'>
-         
+        STB - Société Tunisienne de Banque
     </div>
 </body>
 </html>";
@@ -155,6 +155,7 @@ namespace Credit.API.Services
                 var errorContent = await response.Content.ReadAsStringAsync();
                 throw new Exception($"Erreur lors de l'appel à l'API Auth: {response.StatusCode} - {errorContent}");
             }
+
             var json = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<UserDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
