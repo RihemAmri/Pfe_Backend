@@ -102,6 +102,18 @@ services:
     depends_on:
       - mongo
       - rabbitmq
+  statistiques-api:
+    build:
+      context: ./Statistiques.API
+      dockerfile: Dockerfile
+    ports:
+      - "4012:4012"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    networks:
+      - backend
+    depends_on:
+      - mongo
 
   validation-api:
     build:
