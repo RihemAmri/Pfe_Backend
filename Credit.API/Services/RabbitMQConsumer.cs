@@ -4,6 +4,12 @@ using System.Text;
 using System.Text.Json;
 using Credit.API.DTOs;
 using Credit.API.Services;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading;
+using System.Threading.Tasks;
+using System;
 
 public class RabbitMQConsumer : BackgroundService
 {
@@ -18,18 +24,23 @@ public class RabbitMQConsumer : BackgroundService
         _configuration = configuration;
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // ✅ Tentatives de connexion avec retry
-        for (int i = 0; i < 5; i++)
+        var factory = new ConnectionFactory()
+        {
+            HostName = _configuration["RabbitMQ:Host"],
+            Port = int.Parse(_configuration["RabbitMQ:Port"]),
+            UserName = _configuration["RabbitMQ:Username"],
+            Password = _configuration["RabbitMQ:Password"],
+            DispatchConsumersAsync = true
+        };
+
+        int retryCount = 0;
+
+        while (retryCount < 10 && !stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var factory = new ConnectionFactory()
-                {
-                    HostName = _configuration["RabbitMQ:Host"]
-                };
-
                 _connection = factory.CreateConnection();
                 _channel = _connection.CreateModel();
 
@@ -38,26 +49,25 @@ public class RabbitMQConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Tentative {i + 1} de connexion à RabbitMQ échouée : {ex.Message}");
-                Thread.Sleep(3000); // Attendre 3 secondes
+                retryCount++;
+                Console.WriteLine($"❌ Tentative {retryCount} de connexion à RabbitMQ échouée : {ex.Message}");
+                await Task.Delay(5000, stoppingToken); // Attendre 5 secondes sans bloquer
             }
         }
 
-        // ❌ Si échec après toutes les tentatives, abandonner
         if (_connection == null || !_connection.IsOpen)
         {
             Console.WriteLine("❌ Impossible de se connecter à RabbitMQ après plusieurs tentatives.");
-            return Task.CompletedTask;
+            return;
         }
 
-        // ✅ Déclaration de la queue
         _channel.QueueDeclare(
             queue: "credit_creation_queue",
             durable: false,
             exclusive: false,
             autoDelete: false);
 
-        var consumer = new EventingBasicConsumer(_channel);
+        var consumer = new AsyncEventingBasicConsumer(_channel);
 
         consumer.Received += async (model, ea) =>
         {
@@ -84,6 +94,7 @@ public class RabbitMQConsumer : BackgroundService
                 IdClient = message.IdClient,
                 Montant = message.Montant,
                 DureeMois = message.DureeMois,
+                Emailclient= message.Emailclient,
                 TypeCredit = message.TypeCredit,
                 InteretFixe = message.DureeMois >= 180,
                 TauxInteret = message.DureeMois >= 180 ? 0.05f : 0.07f
@@ -92,6 +103,7 @@ public class RabbitMQConsumer : BackgroundService
             try
             {
                 await creditService.AjouterCreditAsync(credit);
+                Console.WriteLine($"✅ Crédit ajouté pour la demande {credit.IdDemande}");
             }
             catch (Exception ex)
             {
@@ -101,13 +113,22 @@ public class RabbitMQConsumer : BackgroundService
 
         _channel.BasicConsume(queue: "credit_creation_queue", autoAck: true, consumer: consumer);
 
-        return Task.CompletedTask;
+        // Garde la tâche vivante tant que le service tourne
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     public override async Task StopAsync(CancellationToken stoppingToken)
     {
-        _channel?.Close();
-        _connection?.Close();
+        try
+        {
+            _channel?.Close();
+            _connection?.Close();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la fermeture de RabbitMQ : {ex.Message}");
+        }
+
         await base.StopAsync(stoppingToken);
     }
 }

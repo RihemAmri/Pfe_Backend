@@ -7,5 +7,7 @@ namespace Credit.API.DTOs
         public decimal Montant { get; set; }
         public int DureeMois { get; set; }
         public string TypeCredit { get; set; }
+        public string Emailclient { get; set; }
+       
     }
 }

@@ -20,6 +20,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 
 # Définir le répertoire de travail
 WORKDIR /app
+RUN apt-get update && \
+    apt-get install -y libgdiplus libx11-dev && \
+    apt-get clean
+
+# ✅ Copier la bibliothèque native dans le chemin système et projet
+COPY ./DinkToPdfLib/linux64/libwkhtmltox.so /usr/lib/libwkhtmltox.so
+COPY DinkToPdfLib/linux64/libwkhtmltox.so /app/DinkToPdfLib/linux64/
 
 # Copier les fichiers publiés depuis l'étape précédente
 COPY --from=build /app/publish .
