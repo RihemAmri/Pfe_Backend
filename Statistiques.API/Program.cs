@@ -1,11 +1,12 @@
-
+using Statistiques.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.WebHost.UseUrls("http://*:4012");
 builder.Services.AddControllers();
-  
+builder.Services.AddHttpClient<IStatistiquesService, StatistiquesService>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
