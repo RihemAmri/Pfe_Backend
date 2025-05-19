@@ -10,7 +10,7 @@ namespace Credit.API.DTOs
         
 
         public DateTime DateDebut { get; set; } = DateTime.Now;
-        public string TypeCredit { get; set; }  // Nouveau champ Type de crédit
+        public string TypeCredit { get; set; }          
           public float TauxInteret { get; set; }
           public bool InteretFixe { get; set; }
     }

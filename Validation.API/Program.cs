@@ -22,6 +22,11 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+var notificationApiUrl = builder.Configuration["NOTIFICATION_API_URL"];
+builder.Services.AddHttpClient("NotificationApi", client =>
+{
+    client.BaseAddress = new Uri(notificationApiUrl);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -42,7 +47,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-app.UseHttpsRedirection();
+
 app.UseCors("AllowAngular");
 app.UseAuthorization();
 app.MapControllers();
