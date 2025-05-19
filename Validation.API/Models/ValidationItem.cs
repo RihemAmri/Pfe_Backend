@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System.Text.Json.Serialization;
+
 
 namespace Validation.API.Models
 {
@@ -16,6 +18,8 @@ namespace Validation.API.Models
         public int DureeEnAnnees { get; set; }
         public string TypeCredit { get; set; }
         public string Email { get; set; }
+        [JsonPropertyName("userId")]
+        public string UserId { get; set; }
     }
 
 }

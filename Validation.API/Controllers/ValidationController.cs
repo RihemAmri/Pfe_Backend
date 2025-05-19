@@ -10,10 +10,12 @@ namespace Validation.API.Controllers
     public class ValidationController : ControllerBase
     {
         private readonly IValidationService _service;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public ValidationController(IValidationService service)
+        public ValidationController(IValidationService service, IHttpClientFactory httpClientFactory)
         {
             _service = service;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpPost("update-status/{id}")]

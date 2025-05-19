@@ -43,7 +43,8 @@ namespace Validation.API.Repositories
                                                        .Include("MontantDemande")
                                                        .Include("DureeEnAnnees")
                                                        .Include("TypeCredit")
-                                                       .Include("Email");
+                                                       .Include("Email")
+                                                       .Include("UserId");
 
     var demandeDocument = await _demandeCollection.Find(filter).Project<BsonDocument>(projection).FirstOrDefaultAsync();
 
@@ -60,7 +61,8 @@ namespace Validation.API.Repositories
         MontantDemande = demandeDocument["MontantDemande"].ToDecimal(),
         DureeEnAnnees = demandeDocument["DureeEnAnnees"].ToInt32(),
         TypeCredit = demandeDocument["TypeCredit"].ToString(),
-        Email = demandeDocument["Email"].ToString()
+        Email = demandeDocument["Email"].ToString(),
+        UserId = demandeDocument["UserId"].ToString()
     };
 
     return demande;
@@ -71,6 +73,7 @@ namespace Validation.API.Repositories
             var update = Builders<BsonDocument>.Update
                 .Set("Statut", simplifiedStatus)
                 .Set("DateDerniereModification", DateTime.UtcNow);
+                
 
             try
             {
