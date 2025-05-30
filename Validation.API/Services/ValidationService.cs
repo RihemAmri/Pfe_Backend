@@ -85,7 +85,7 @@ namespace Validation.API.Services
                         var motif = string.IsNullOrWhiteSpace(dto.MotifRefus) ? "Aucun motif précisé." : dto.MotifRefus;
                         
                         await _emailService.SendRefusEmailAsync(demande.Email, $"{demande.Prenom} {demande.Nom}", motif);
-                        Console.WriteLine($"notif de refus envoyé à {demande.UserId} avec le motif : {motif}");
+                        
                         await EnvoyerNotificationAsync(demande.UserId, "refusée",demande.TypeCredit, demande.MontantDemande);
                         
                         break;

@@ -16,7 +16,7 @@ namespace Credit.API.Models{
         public float TauxInteret { get; set; }
         public bool InteretFixe { get; set; }
         public string TypeCredit { get; set; }
-        public string Status { get; set; } = "EnCours";
+        public string Status { get; set; } = "en cours";
 
         public DateTime DateDebut { get; set; } = DateTime.Now;
        

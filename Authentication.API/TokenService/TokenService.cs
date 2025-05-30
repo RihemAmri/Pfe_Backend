@@ -43,7 +43,6 @@ namespace Authentication.API.Services
                 signingCredentials: creds
             );
 
-            // Retourne le token sous forme de chaîne
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     

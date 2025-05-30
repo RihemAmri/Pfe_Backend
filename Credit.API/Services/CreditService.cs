@@ -103,7 +103,7 @@ namespace Credit.API.Services
                 ligne.CapitalRestant = 0;
             }
 
-            credit.Status = "Cloture";
+            credit.Status = "clôturés";
     
 
 
@@ -131,7 +131,7 @@ namespace Credit.API.Services
                 }
 
                 // Vérifier si toutes les lignes sont payées
-                credit.Status = credit.TableauAmortissement.All(a => a.Paye) ? "Cloture" : "EnCours";
+                credit.Status = credit.TableauAmortissement.All(a => a.Paye) ? "clôturés" : "en cours";
 
                 await _credits.ReplaceOneAsync(c => c.Id == credit.Id, credit);
             }
