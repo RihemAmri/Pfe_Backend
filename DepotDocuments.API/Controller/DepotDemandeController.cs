@@ -27,9 +27,11 @@ namespace DepotDocuments.API.Controllers
         private readonly YousignService  _yousignService;
         //private readonly BrevoHttpMailService _mailService;
         //public DepotDemandeController(IConfiguration config, BrevoHttpMailService mailService)
-        public DepotDemandeController(IConfiguration config, MailService mailService,IHttpClientFactory httpClientFactory,IConverter pdfConverter,PdfService pdfService,DocuSignService docusignService,YousignService  yousignService)
-{
-        
+        private readonly CloudinaryService _uploadService;
+        //private readonly SignatureService _signatureService;
+        public DepotDemandeController(IConfiguration config, MailService mailService, IHttpClientFactory httpClientFactory, IConverter pdfConverter, PdfService pdfService, DocuSignService docusignService, YousignService yousignService, CloudinaryService uploadService)
+        {
+
             var connectionString = config["DepotDemandeSettings:ConnectionString"];
             var databaseName = config["DepotDemandeSettings:DatabaseName"];
             var collectionName = config["DepotDemandeSettings:CollectionName"];
@@ -40,66 +42,93 @@ namespace DepotDocuments.API.Controllers
             _mailService = mailService;
             _httpClientFactory = httpClientFactory;
             _pdfConverter = pdfConverter;
-             _pdfService = pdfService;
-             _docusignService = docusignService;
-             _yousignService = yousignService;
+            _pdfService = pdfService;
+            _docusignService = docusignService;
+            _yousignService = yousignService;
+            _uploadService = uploadService;
         }
         
 
-        [HttpPost]
-        public async Task<IActionResult> EnregistrerDepotDemande([FromBody] DepotDemandeDto dto)
+       [HttpPost]
+public async Task<IActionResult> EnregistrerDepotDemande([FromBody] DepotDemandeDto dto)
+{
+    var depot = new DepotDemande
+    {
+        UserId = dto.UserId,
+        Nom = dto.Nom,
+        Prenom = dto.Prenom,
+        Email = dto.Email,
+        Adresse = dto.Adresse,
+        Cin = dto.Cin,
+        NumeroCompte = dto.NumeroCompte,
+        DateNaissance = dto.DateNaissance,
+        Telephone = dto.Telephone,
+        Civilite = dto.Civilite,
+        MontantDemande = dto.MontantDemande,
+        MensualiteEstimee = dto.MensualiteEstimee,
+        DureeEnAnnees = dto.DureeEnAnnees,
+        TypeCredit = dto.TypeCredit,
+        TypeFinancement = dto.TypeFinancement,
+        RevenuMensuelOcr = dto.RevenuMensuelOcr,
+        AttestationSalaireOcr = dto.AttestationSalaireOcr,
+        DocumentIds = dto.DocumentIds ?? new List<string>(),
+        DateDerniereModification = DateTime.UtcNow
+    };
+
+    //await _demandeCollection.InsertOneAsync(depot);
+
+    // ✅ Enregistrer la signature maintenant
+    if (!string.IsNullOrEmpty(dto.Type))
+    {
+        string base64 = dto.Type == "drawn" ? dto.DrawnSignature : dto.UploadedSignature;
+
+        if (!string.IsNullOrEmpty(base64))
         {
-            var depot = new DepotDemande
+            string base64Data = Regex.Replace(base64, @"^data:image\/[a-zA-Z]+;base64,", string.Empty);
+            byte[] signatureBytes = Convert.FromBase64String(base64Data);
+
+            using var stream = new MemoryStream(signatureBytes);
+            IFormFile fakeFile = new FormFile(stream, 0, signatureBytes.Length, "signature", "signature.png")
             {
-                UserId = dto.UserId,
-                Nom = dto.Nom,
-                Prenom = dto.Prenom,
-                Email = dto.Email,
-                Adresse = dto.Adresse,
-                Cin = dto.Cin,
-                NumeroCompte = dto.NumeroCompte,
-                DateNaissance = dto.DateNaissance,
-                Telephone = dto.Telephone,
-                Civilite = dto.Civilite,
-                MontantDemande = dto.MontantDemande,
-                MensualiteEstimee = dto.MensualiteEstimee,
-                DureeEnAnnees = dto.DureeEnAnnees,
-                TypeCredit = dto.TypeCredit,
-                TypeFinancement = dto.TypeFinancement,
-                RevenuMensuelOcr = dto.RevenuMensuelOcr,
-                AttestationSalaireOcr = dto.AttestationSalaireOcr,
-                DocumentIds = dto.DocumentIds ?? new List<string>(),
-                DateDerniereModification = DateTime.UtcNow
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
             };
 
-            await _demandeCollection.InsertOneAsync(depot);
+            string uploadedUrl = await _uploadService.UploadFileAsync(fakeFile);
 
-            // Envoi de l’email de confirmation
-            //await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
-            if (!string.IsNullOrEmpty(dto.PdfBase64))
-            {
-                byte[] pdfBytes = Convert.FromBase64String(dto.PdfBase64);
-                await _mailService.EnvoyerMailConfirmationAvecPdf(depot.Email, $"{depot.Prenom} {depot.Nom}", pdfBytes);
-            }
-            else
-            {
-                await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
-            }
-            await _mailService.EnvoyerNotificationAdmin();
-             // 🚀 Appel à Notification.API
-        var client = _httpClientFactory.CreateClient("NotificationApi");
-        var notif = new NotificationDto{
-            DestinataireId = "6807f3958d2732dd1864cd9b", //⚠️nodnod badil lina 
-            Message = $"Le client {depot.NumeroCompte} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
-            Date = DateTime.UtcNow,
-            Lu = false,
-            Type = "demande"
-        };
-        await client.PostAsJsonAsync("api/Notification", notif);
+            depot.SignatureUrl = uploadedUrl;
+            depot.Type = dto.Type;
 
-            //await _mailService.EnvoyerMailAsync(depot.Email, $"{depot.Prenom} {depot.Nom}");
-            return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
+            //await _signatureService.SaveSignatureAsync(record);
         }
+    }
+    await _demandeCollection.InsertOneAsync(depot);
+    // 📧 Email
+    if (!string.IsNullOrEmpty(dto.PdfBase64))
+    {
+        byte[] pdfBytes = Convert.FromBase64String(dto.PdfBase64);
+        await _mailService.EnvoyerMailConfirmationAvecPdf(depot.Email, $"{depot.Prenom} {depot.Nom}", pdfBytes);
+    }
+    else
+    {
+        await _mailService.EnvoyerMailConfirmation(depot.Email, $"{depot.Prenom} {depot.Nom}");
+    }
+
+    // 🔔 Notification admin
+    var client = _httpClientFactory.CreateClient("NotificationApi");
+    var notif = new NotificationDto
+    {
+        DestinataireId = "6807f3958d2732dd1864cd9b", // à remplacer dynamiquement si besoin
+        Message = $"Le client {depot.NumeroCompte} a demandé un crédit de {depot.TypeCredit} pour {depot.MontantDemande} TND",
+        Date = DateTime.UtcNow,
+        Lu = false,
+        Type = "demande"
+    };
+    await client.PostAsJsonAsync("api/Notification", notif);
+
+    return Ok(new { message = "Demande enregistrée avec succès", id = depot.Id });
+}
+
      [HttpPost("generer-pdf")]
     public IActionResult GenererPdf([FromBody] DepotDemandeDto demande)
     {
@@ -147,7 +176,7 @@ namespace DepotDocuments.API.Controllers
         return Ok(new { fileName, path });
     }
     [HttpPost("signature")]
-    public IActionResult SignDocument([FromBody] SignatureUploadRequest request)
+    public async Task<IActionResult> SignDocument([FromBody] SignatureUploadRequest request)
     {   ModelState.Clear();
 
             // ✅ Validation conditionnelle
@@ -181,8 +210,31 @@ namespace DepotDocuments.API.Controllers
         string base64Data = Regex.Replace(base64, @"^data:image\/[a-zA-Z]+;base64,", string.Empty);
         byte[] signatureBytes = Convert.FromBase64String(base64Data);
 
-        // Générer le PDF avec infos + signature
-        byte[] pdf = _pdfService.GenerateDemandePdfWithSignature(request.Demande, signatureBytes);
+        // Convertir le tableau d'octets en stream pour upload
+    using var stream = new MemoryStream(signatureBytes);
+    IFormFile fakeFile = new FormFile(stream, 0, signatureBytes.Length, "signature", "signature.png")
+    {
+        Headers = new HeaderDictionary(),
+        ContentType = "image/png"
+    };
+
+    // 📤 Upload sur Cloudinary
+    /*string uploadedUrl = await _uploadService.UploadFileAsync(fakeFile);
+
+    // 🗃️ Enregistrer la signature dans MongoDB
+    var record = new SignatureRecord
+    {
+        DemandeId = request.Demande.Id,
+        SignatureType = request.Type,
+        CloudinaryUrl = uploadedUrl,
+        Date = DateTime.UtcNow
+    };
+
+    await _signatureService.SaveSignatureAsync(record);*/
+
+
+            // Générer le PDF avec infos + signature
+            byte[] pdf = _pdfService.GenerateDemandePdfWithSignature(request.Demande, signatureBytes);
         return File(pdf, "application/pdf");
         //return File(pdf, "application/pdf", "demande-signee.pdf");
     }

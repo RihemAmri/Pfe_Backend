@@ -25,7 +25,7 @@ namespace Statistiques.API.Services
             var utilisateurs = users?.Where(u => u.Role == "utilisateur").ToList();
             var demandesAcceptees = demandes?.Count(d => d.Statut == "validée" || d.Statut == "contrat_signé" || d.Statut == "crédit_actif");
             var demandesRefusees = demandes?.Count(d => d.Statut == "refusée");
-            var creditsEnCours = credits?.Count(c => c.Statut == "EnCours");
+            var creditsEnCours = credits?.Count(c => c.Status == "EnCours");
             var demandesEnAttente = demandes?.Count(d => d.Statut == "soumise");
             return new TotauxDto
             {
