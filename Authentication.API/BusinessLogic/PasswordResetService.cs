@@ -44,7 +44,7 @@ namespace Authentication.API.BusinessLogic
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress("credit.platform0@gmail.com"), 
+                From = new MailAddress("credit.platform0@gmail.com", "STB Bank"),
                 Subject = "Réinitialisation du mot de passe",
                 Body = $"Cliquez ici pour réinitialiser votre mot de passe : {resetLink}",
                 IsBodyHtml = true,
