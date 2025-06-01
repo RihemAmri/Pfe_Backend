@@ -38,13 +38,13 @@ namespace Authentication.API.BusinessLogic
             var smtpClient = new SmtpClient("smtp.gmail.com")
             {
                 Port = 587,
-                Credentials = new NetworkCredential("amririhem19@gmail.com", "rfdf rayi fird slem"), // Utiliser le mot de passe d'application ici
+                Credentials = new NetworkCredential("credit.platform0@gmail.com", "gbir clnu mvgm itie"), // Utiliser le mot de passe d'application ici
                 EnableSsl = true,
             };
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress("amririhem19@gmail.com"), 
+                From = new MailAddress("credit.platform0@gmail.com"), 
                 Subject = "Réinitialisation du mot de passe",
                 Body = $"Cliquez ici pour réinitialiser votre mot de passe : {resetLink}",
                 IsBodyHtml = true,

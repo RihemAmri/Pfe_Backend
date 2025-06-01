@@ -127,9 +127,9 @@ namespace Credit.API.Controllers
         [HttpPost("mise-a-jour-automatique")]
         public async Task<IActionResult> MettreAJourAmortissements()
         {
-            var anciensCredits = await _service.GetCreditsParStatusAsync("EnCours");
+            var anciensCredits = await _service.GetCreditsParStatusAsync("en cours");
             await _service.MettreAJourAmortissementsAsync();
-            var nouveauxCredits = await _service.GetCreditsParStatusAsync("Cloture");
+            var nouveauxCredits = await _service.GetCreditsParStatusAsync("clôturés");
 
             var cloturesRecents = nouveauxCredits
                 .Where(nouveau => anciensCredits.Any(ancien => ancien.Id == nouveau.Id))
